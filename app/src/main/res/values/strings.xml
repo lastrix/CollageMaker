@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CollageMaker</string>
+    <string name="icon_desc_instagram">Instagram icon</string>
+    <string name="btn_give_me_collage">Give me collage</string>
+    <string name="error_no_username_specified">Error: no username specified.</string>
+    <string name="error_user_check_failed">Error: user check failed.</string>
+    <string name="error_no_user_found">Error: no user found.</string>
+    <string name="photo_picker">Select photos</string>
+    <string name="error_user_selection_not_implemented">Error: search returned multiple users. Selection is not implemented.</string>
+    <string name="message_searching_for_user">Searching for user…</string>
+    <string name="accept">Accept</string>
+    <string name="message_downloading_popular_photos">Downloading popular photos…</string>
+    <string name="error_index_loading_failed">Error: failed to load list of popular user images</string>
+    <string name="error_image_loading_failed">Error: image loading failed</string>
+    <string name="all">All</string>
+    <string name="none">None</string>
+
+</resources>
