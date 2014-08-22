@@ -91,13 +91,8 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        mGfxSurfaceView.onStop();
-    }
-
-    @Override
     protected void onDestroy() {
+        mGfxSurfaceView.onDestroy();
         mPhotos.clear();
         for (Drawable drawable : mDrawables) {
             //don't trust gc, recycle them manually.

@@ -38,8 +38,8 @@ public class GFXSurfaceView extends GLSurfaceView {
     /**
      * Send
      */
-    public void onStop() {
-        mRenderer.onStop();
+    public void onDestroy() {
+        mRenderer.onDestroy();
     }
 
     /**

@@ -229,7 +229,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         glDeleteShader(mTextureShader);
     }
 
-    public void onStop() {
+    public void onDestroy() {
         mDestroy = true;
     }
 
