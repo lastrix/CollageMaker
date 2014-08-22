@@ -16,5 +16,7 @@
     <string name="error_image_loading_failed">Ошибка: не удалось загрузить изображения</string>
     <string name="all">Все</string>
     <string name="none">Ничего</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="zoom_out">Zoom out</string>
 
 </resources>

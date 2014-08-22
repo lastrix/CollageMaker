@@ -9,10 +9,9 @@ import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
+import java.nio.*;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -63,9 +62,14 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
     private final float[] mScratch = new float[16];
+
     private final float[] mTransform = new float[16];
+    private final float[] mScale = new float[16];
+    private final float[] mTranslate = new float[16];
+
     private final float[] mMvp = new float[16];
     private final List<GFXEntity> mEntities = new LinkedList<GFXEntity>();
+    private final Deque<GFXEntity> mDrawOrder = new LinkedList<GFXEntity>();
     private volatile boolean mDestroy = false;
 
     private float mZoom = 3;
@@ -152,16 +156,19 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        GLES20.glViewport(0, 0, width, height);
+        glViewport(0, 0, width, height);
 
         float ratio = (float) width / height;
 
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 2, 20);
 
-        // Calculate the projection and view transformation
-        Matrix.multiplyMM(mMvp, 0, mProjectionMatrix, 0, mViewMatrix, 0);
+        synchronized (mMvp) {
+            Matrix.orthoM(mProjectionMatrix, 0, -mZoom * ratio, mZoom * ratio, -mZoom, mZoom, 1, 10);
+
+            // Calculate the projection and view transformation
+            Matrix.multiplyMM(mMvp, 0, mProjectionMatrix, 0, mViewMatrix, 0);
+        }
     }
 
     @Override
@@ -172,7 +179,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         }
 
         // Draw background color
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         if (mEntities.size() == 0) return;
 
@@ -190,8 +197,12 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
         glUniform1i(mSamplerLoc, 0);
 
-        for (GFXEntity entity : mEntities) {
-            if (entity.isChecked()) drawEntity(unused, entity);
+        synchronized (mMvp) {
+            synchronized (mDrawOrder) {
+                for (GFXEntity entity : mDrawOrder) {
+                    if (entity.isChecked()) drawEntity(unused, entity);
+                }
+            }
         }
 
         glDisableVertexAttribArray(mPositionHandle);
@@ -203,9 +214,32 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     }
 
+    public float[] getMvp() {
+        return mMvp;
+    }
+
+    public Bitmap takeScreen(int width, int height){
+        int size = width * height;
+        int[] array = new int[size];
+        IntBuffer buf = IntBuffer.wrap(array);
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+
+        for (int i = 0; i < size; ++i) {
+            // The alpha and green channels' positions are preserved while the red and blue are swapped
+            array[i] = ((array[i] & 0xff00ff00)) | ((array[i] & 0x000000ff) << 16) | ((array[i] & 0x00ff0000) >> 16);
+        }
+
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bmp.setPixels(array, size - width, -width, 0, 0, width, height);
+        return bmp;
+    }
+
     private void drawEntity(GL10 unused, GFXEntity entity) {
-        Matrix.setIdentityM(mTransform, 0);
-        Matrix.translateM(mTransform, 0, entity.getX(), entity.getY(), 0f);
+        Matrix.setIdentityM(mTranslate, 0);
+        Matrix.translateM(mTranslate, 0, entity.getX(), entity.getY(), 0.0f);
+        Matrix.setIdentityM(mScale, 0);
+        Matrix.scaleM(mScale, 0, entity.getRatio(), 1f, 1f);
+        Matrix.multiplyMM(mTransform, 0, mTranslate, 0, mScale, 0);
         Matrix.multiplyMM(mScratch, 0, mMvp, 0, mTransform, 0);
 
         // Apply the projection and view transformation
@@ -220,6 +254,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     private void dispose() {
+        mDrawOrder.clear();
         for (GFXEntity entity : mEntities) {
             entity.onDestroy();
         }
@@ -235,20 +270,46 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     public void add(Bitmap bitmap) {
         if (!mDestroy) {
-            mEntities.add(new GFXEntity(bitmap));
+            GFXEntity entity = new GFXEntity(bitmap);
+            mEntities.add(entity);
+            synchronized (mDrawOrder) {
+                mDrawOrder.add(entity);
+            }
         }
     }
+
 
     public float getZoom() {
         return mZoom;
     }
 
-    public void setZoom(float mZoom) {
-        this.mZoom = mZoom;
+    public void setZoom(float mZoom, int width, int height) {
+        if ( mZoom >= 0.5f && mZoom < 10f) {
+            this.mZoom = mZoom;
+            float ratio = (float) width / height;
+            synchronized (mMvp) {
+                // this projection matrix is applied to object coordinates
+                // in the onDrawFrame() method
+
+                Matrix.orthoM(mProjectionMatrix, 0, -mZoom * ratio, mZoom * ratio, -mZoom, mZoom, 1, 10);
+
+                // Calculate the projection and view transformation
+                Matrix.multiplyMM(mMvp, 0, mProjectionMatrix, 0, mViewMatrix, 0);
+            }
+        }
     }
 
     public void setChecked(int position, boolean state) {
-        mEntities.get(position).setChecked(state);
+        GFXEntity e = mEntities.get(position);
+        e.setChecked(state);
+        putToTop(e);
+    }
+
+    void putToTop(GFXEntity e) {
+        synchronized (mDrawOrder) {
+            mDrawOrder.remove(e);
+            mDrawOrder.add(e);
+        }
     }
 
     protected void loadProgram() {
@@ -310,12 +371,31 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         return shader;
     }
 
-    private static class GFXEntity {
+    public GFXEntity getEntityUnder(float x, float y) {
+        synchronized (mDrawOrder){
+            Iterator<GFXEntity> it = mDrawOrder.descendingIterator();
+            GFXEntity e;
+            float dx;
+            float dy;
+            while(it.hasNext()){
+                e = it.next();
+                dx = x - e.getX();
+                dy = y - e.getY();
+                if ( dx > 0f && dx < 1f && dy > 0f && dy < 1f) {
+                    return e;
+                }
+            }
+        }
+        return null;
+    }
+
+    static class GFXEntity {
         private Bitmap mBitmap;
         private float mX, mY;
         private float mScale;
         private int textureId = -1;
         private volatile boolean mChecked;
+        private float mRatio;
 
         private GFXEntity(Bitmap bitmap) {
             this(bitmap, 0f, 0f, 1f);
@@ -326,6 +406,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
             this.mX = x;
             this.mY = y;
             this.mScale = scale;
+            mRatio = (float)bitmap.getWidth() / (float)bitmap.getHeight();
         }
 
         public Bitmap getBitmap() {
@@ -347,6 +428,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         public void setY(float mY) {
             this.mY = mY;
         }
+
 
         public float getScale() {
             return mScale;
@@ -388,6 +470,10 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
             } else {
                 glBindTexture(GL_TEXTURE_2D, textureId);
             }
+        }
+
+        public float getRatio() {
+            return mRatio;
         }
     }
 }

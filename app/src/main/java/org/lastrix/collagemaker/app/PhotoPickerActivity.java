@@ -26,9 +26,10 @@ import java.util.List;
 /**
  * Created by lastrix on 8/21/14.
  */
-public class PhotoPickerActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
+public class PhotoPickerActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.ScreenShotListener {
     public static final String LOG_TAG = PhotoPickerActivity.class.getSimpleName();
-    private static final boolean LOG_ALL = true;
+    private static final boolean LOG_ALL = false;
+    public static final float ZOOM_STEP = 0.5f;
     private User mUser;
     private Subscription mSubscription = null;
     private ProgressDialog mProgressDialog;
@@ -74,6 +75,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         mList.setOnItemClickListener(this);
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.preview);
+        mGfxSurfaceView.setScreenShotListener(this);
     }
 
     @Override
@@ -92,6 +94,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
     @Override
     protected void onDestroy() {
+        mGfxSurfaceView.setScreenShotListener(null);
         mGfxSurfaceView.onDestroy();
         mPhotos.clear();
         for (Drawable drawable : mDrawables) {
@@ -126,28 +129,33 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.preview) {
-            //do preview
-            generateCollage();
-            return true;
-        } else if (id == R.id.select_all) {
-            setCheckedState(true);
-            return true;
-        } else if (id == R.id.select_none) {
-            setCheckedState(false);
-            return true;
+        switch (id) {
+            case R.id.preview:
+                //do preview
+                mGfxSurfaceView.takeScreen();
+                return true;
+
+            case R.id.select_all:
+                setCheckedState(true);
+                return true;
+
+            case R.id.select_none:
+                setCheckedState(false);
+                return true;
+
+            case R.id.zoom_in:
+                mGfxSurfaceView.zoom(-ZOOM_STEP);
+                return true;
+
+            case R.id.zoom_out:
+                mGfxSurfaceView.zoom(ZOOM_STEP);
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
     }
-
-    private void generateCollage() {
-
-    }
-
 
     private void setCheckedState(boolean state) {
         final int size = mAdapter.getCount();
@@ -169,6 +177,18 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
             holder.checked.setChecked(newState);
         }
         mGfxSurfaceView.setChecked(position, newState);
+    }
+
+    @Override
+    public void screenShot(final Bitmap bmp) {
+        mDrawables.add(new BitmapDrawable(getResources(), bmp));
+        mGfxSurfaceView.add(bmp);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mAdapter.notifyDataSetChanged();
+            }
+        });
     }
 
     private static class PhotosSubscriber extends Subscriber<Photos.Photo> {
