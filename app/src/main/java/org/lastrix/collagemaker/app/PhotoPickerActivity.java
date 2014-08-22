@@ -1,7 +1,6 @@
 package org.lastrix.collagemaker.app;
 
 import android.app.ProgressDialog;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -13,6 +12,7 @@ import android.view.*;
 import android.widget.*;
 import org.lastrix.collagemaker.app.api.Photos;
 import org.lastrix.collagemaker.app.api.User;
+import org.lastrix.collagemaker.app.gfx.GFXSurfaceView;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -33,9 +33,10 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
     private Subscription mSubscription = null;
     private ProgressDialog mProgressDialog;
     private PhotoPickerListViewAdapter mAdapter;
-    private List<Drawable> mDrawables;
+    private List<BitmapDrawable> mDrawables;
     private List<Photos.Photo> mPhotos;
     private ListView mList;
+    private GFXSurfaceView mGfxSurfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,22 +66,14 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new PhotosSubscriber(this, mPhotos));
 
-        mDrawables = new ArrayList<Drawable>();
-
+        mDrawables = new ArrayList<BitmapDrawable>();
 
         mList = (ListView) findViewById(R.id.photos);
         mAdapter = new PhotoPickerListViewAdapter(mDrawables, getLayoutInflater(), mList);
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener(this);
-    }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        setContentView(R.layout.activity_photo_picker);
-        mList = (ListView) findViewById(R.id.photos);
-        mList.setAdapter(mAdapter);
-        mList.setOnItemClickListener(this);
+        mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.preview);
     }
 
     @Override
@@ -88,11 +81,19 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         super.onResume();
         //anyway we can't do it.
         if (mUser == null) finish();
+        mGfxSurfaceView.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        mGfxSurfaceView.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mGfxSurfaceView.onStop();
     }
 
     @Override
@@ -117,6 +118,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         mProgressDialog = null;
         mUser = null;
         mList = null;
+        mGfxSurfaceView = null;
         super.onDestroy();
     }
 
@@ -135,6 +137,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         int id = item.getItemId();
         if (id == R.id.preview) {
             //do preview
+            generateCollage();
             return true;
         } else if (id == R.id.select_all) {
             setCheckedState(true);
@@ -146,11 +149,18 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         return super.onOptionsItemSelected(item);
     }
 
+    private void generateCollage() {
+
+    }
+
+
     private void setCheckedState(boolean state) {
         final int size = mAdapter.getCount();
         for (int i = 0; i < size; i++) {
             mList.setItemChecked(i, state);
+            mGfxSurfaceView.setChecked(i, state);
         }
+        mGfxSurfaceView.requestRender();
     }
 
     @Override
@@ -160,12 +170,10 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         mList.setItemChecked(position, newState);
         //TODO: something really strange here. I'm starting to hate damn pre-honeycomb!
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.HONEYCOMB) {
-            Toast.makeText(this, "Item checked, even before honeycomb", Toast.LENGTH_LONG).show();
             ViewHolder holder = (ViewHolder) view.getTag();
             holder.checked.setChecked(newState);
-        } else {
-            Toast.makeText(this, "Item checked", Toast.LENGTH_LONG).show();
         }
+        mGfxSurfaceView.setChecked(position, newState);
     }
 
     private static class PhotosSubscriber extends Subscriber<Photos.Photo> {
@@ -217,9 +225,9 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
     private static class ImageSubscriber extends Subscriber<Bitmap> {
         private final WeakReference<PhotoPickerActivity> mContext;
-        private final List<Drawable> mDrawables;
+        private final List<BitmapDrawable> mDrawables;
 
-        public ImageSubscriber(WeakReference<PhotoPickerActivity> mContext, List<Drawable> mDrawables) {
+        public ImageSubscriber(WeakReference<PhotoPickerActivity> mContext, List<BitmapDrawable> mDrawables) {
             this.mContext = mContext;
             this.mDrawables = mDrawables;
         }
@@ -233,6 +241,8 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
             activity.mAdapter.notifyDataSetChanged();
             //that's all now, c u!
+
+            activity.mGfxSurfaceView.requestRender();
         }
 
         @Override
@@ -249,6 +259,8 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
         @Override
         public void onNext(Bitmap o) {
+            PhotoPickerActivity activity = mContext.get();
+            activity.mGfxSurfaceView.add(o);
             mDrawables.add(new BitmapDrawable(mContext.get().getResources(), o));
         }
     }
@@ -256,11 +268,11 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
     private static class PhotoPickerListViewAdapter extends BaseAdapter {
 
-        private final List<Drawable> mDrawables;
+        private final List<BitmapDrawable> mDrawables;
         private final LayoutInflater mInflater;
         private final WeakReference<ListView> mList;
 
-        private PhotoPickerListViewAdapter(List<Drawable> drawables, LayoutInflater inflater, ListView list) {
+        private PhotoPickerListViewAdapter(List<BitmapDrawable> drawables, LayoutInflater inflater, ListView list) {
             this.mDrawables = drawables;
             mInflater = inflater;
             this.mList = new WeakReference<ListView>(list);
