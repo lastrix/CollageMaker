@@ -12,6 +12,9 @@ repositories {
     mavenCentral()
 }
 
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
 android {
     compileSdkVersion 19
     buildToolsVersion "20.0.0"
@@ -26,9 +29,14 @@ android {
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
+        }
+        debug {
+            buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
         }
     }
 }
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])

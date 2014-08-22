@@ -3,6 +3,7 @@ package org.lastrix.collagemaker.app.api;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.lastrix.collagemaker.app.BuildConfig;
 import org.lastrix.collagemaker.app.util.HttpHelper;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ import java.util.List;
  */
 public class InstagramApi {
 
-    public static final String CLIENT_ID = "49b951fac3544d55bd01f9777e302b83";
+    public static final String CLIENT_ID = BuildConfig.INSTAGRAM_CLIENT_ID;
     public static final String API_USER_SEARCH = "https://api.instagram.com/v1/users/search?q=%s&client_id=%s";
     public static final String API_USER_S_POPULAR_PHOTOS = "https://api.instagram.com/v1/users/%d/media/recent/?client_id=%s";
 
