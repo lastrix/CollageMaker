@@ -320,7 +320,9 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
                 synchronized (mLock){
                     for(GFXEntity entity : mEntities){
                         entity.mTextureId = 0;
-                        loadImage(entity);
+                        if ( entity.isChecked()) {
+                            loadImage(entity);
+                        }
                     }
                 }
             }
