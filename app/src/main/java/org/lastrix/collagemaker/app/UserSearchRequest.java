@@ -23,11 +23,16 @@ class UserSearchRequest implements Observable.OnSubscribe<User> {
     public void call(Subscriber<? super User> subscriber) {
         try {
             for (User u : InstagramApi.search(mUsername)) {
+                if (subscriber.isUnsubscribed()) return;
                 subscriber.onNext(u);
             }
-            subscriber.onCompleted();
+            if (!subscriber.isUnsubscribed()) {
+                subscriber.onCompleted();
+            }
         } catch (InstagramApiException e) {
-            subscriber.onError(e);
+            if (!subscriber.isUnsubscribed()) {
+                subscriber.onError(e);
+            }
         }
     }
 }

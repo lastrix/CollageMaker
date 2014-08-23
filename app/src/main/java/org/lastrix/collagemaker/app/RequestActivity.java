@@ -16,6 +16,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.observables.AndroidObservable;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
@@ -77,8 +78,7 @@ public class RequestActivity extends ActionBarActivity {
 
         //run fetch
         mSubscription = AndroidObservable.bindActivity(this, Observable.create(new UserSearchRequest(user)))
-                .subscribeOn(AppScheduler.getScheduler())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
                 .subscribe(new UserSearchSubscriber(this));
     }
 
@@ -104,10 +104,10 @@ public class RequestActivity extends ActionBarActivity {
      * See {@link org.lastrix.collagemaker.app.UserSearchRequest} .
      */
     private static class UserSearchSubscriber extends Subscriber<User> {
-        private final WeakReference<RequestActivity> mContext;
+        private final RequestActivity mActivity;
 
         private UserSearchSubscriber(RequestActivity context) {
-            this.mContext = new WeakReference<RequestActivity>(context);
+            this.mActivity = context;
         }
 
         @Override
@@ -115,32 +115,27 @@ public class RequestActivity extends ActionBarActivity {
             if (LOG_ALL) {
                 Log.d(LOG_TAG, "User check completed!");
             }
-            RequestActivity activity = mContext.get();
-            if (activity == null) {
-                Log.w(LOG_TAG, "Activity is null!");
-                return;
-            }
             // make state clean
-            cleanup(activity);
+            cleanup();
 
             //now we may decide what to do with results
-            final int size = activity.mUsersFound.size();
+            final int size = mActivity.mUsersFound.size();
             if (size == 0) {
                 noResult();
             } else if (size == 1) {
-                singleResult(activity);
+                singleResult();
             } else {
-                multipleResult(activity);
+                multipleResult();
             }
         }
 
-        private void multipleResult(RequestActivity activity) {
+        private void multipleResult() {
             if (LOG_ALL) {
                 Log.v(LOG_TAG, "Starting activity to select user from returned list.");
             }
             //start new user pick activity
             //TODO: add user picker activity instead of error toast.
-            Toast.makeText(activity, R.string.error_user_selection_not_implemented, Toast.LENGTH_LONG).show();
+            Toast.makeText(mActivity, R.string.error_user_selection_not_implemented, Toast.LENGTH_LONG).show();
         }
 
         private void noResult() {
@@ -148,19 +143,19 @@ public class RequestActivity extends ActionBarActivity {
                 Log.i(LOG_TAG, "No users found!");
             }
             //just notify user about such sad results.
-            Toast.makeText(mContext.get(), R.string.error_no_user_found, Toast.LENGTH_LONG).show();
+            Toast.makeText(mActivity, R.string.error_no_user_found, Toast.LENGTH_LONG).show();
         }
 
-        private void singleResult(RequestActivity activity) {
+        private void singleResult() {
             //do image fetch
             if (LOG_ALL) {
                 Log.v(LOG_TAG, "User found, starting photo picker.");
             }
             //launch PhotoPickerActivity
-            final Bundle bundle = activity.mUsersFound.get(0).asBundle();
-            final Intent intent = new Intent(activity, PhotoPickerActivity.class);
+            final Bundle bundle = mActivity.mUsersFound.get(0).asBundle();
+            final Intent intent = new Intent(mActivity, PhotoPickerActivity.class);
             intent.putExtras(bundle);
-            activity.startActivity(intent);
+            mActivity.startActivity(intent);
         }
 
         @Override
@@ -169,35 +164,24 @@ public class RequestActivity extends ActionBarActivity {
                 Log.d(LOG_TAG, "Failed to check user.", e);
             }
 
-            RequestActivity activity = mContext.get();
-            if (activity == null) {
-                Log.w(LOG_TAG, "Activity is null!");
-                return;
-            }
             //anyway cleanup our state.
-            cleanup(activity);
+            cleanup();
             //and make user know about our problems
-            Toast.makeText(activity, R.string.error_user_check_failed, Toast.LENGTH_LONG).show();
+            Toast.makeText(mActivity, R.string.error_user_check_failed, Toast.LENGTH_LONG).show();
         }
 
-        private void cleanup(RequestActivity activity) {
-            activity.mProgressDialog.dismiss();
+        private void cleanup() {
+            mActivity.mProgressDialog.dismiss();
 
-            activity.mSubscription.unsubscribe();
-            activity.mSubscription = null;
+            mActivity.mSubscription.unsubscribe();
+            mActivity.mSubscription = null;
 
-            activity.mBtnCollage.setEnabled(true);
+            mActivity.mBtnCollage.setEnabled(true);
         }
 
         @Override
         public void onNext(User user) {
-            RequestActivity activity = mContext.get();
-            if (activity == null) {
-                Log.w(LOG_TAG, "Activity is null!");
-                return;
-            }
-
-            activity.mUsersFound.add(user);
+            mActivity.mUsersFound.add(user);
         }
     }
 }
