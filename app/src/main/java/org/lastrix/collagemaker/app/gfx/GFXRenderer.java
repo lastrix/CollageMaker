@@ -396,7 +396,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     public GFXEntity getEntityUnder(float x, float y) {
-        synchronized (mDrawOrder){
+        synchronized (mLock){
             Iterator<GFXEntity> it = mDrawOrder.descendingIterator();
             GFXEntity e;
             float dx;
