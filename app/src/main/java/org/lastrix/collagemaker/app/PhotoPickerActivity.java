@@ -56,6 +56,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setMessage(getResources().getString(R.string.message_downloading_popular_photos));
+        mProgressDialog.setCancelable(false);
 
         mPhotos = new ArrayList<Photos.Photo>();
 

@@ -48,6 +48,7 @@ public class RequestActivity extends ActionBarActivity {
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setMessage(getResources().getString(R.string.message_searching_for_user));
+        mProgressDialog.setCancelable(false);
     }
 
 
