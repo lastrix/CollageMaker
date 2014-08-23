@@ -13,7 +13,7 @@ repositories {
 }
 
 Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
+properties.load(project.rootProject.file('app.properties').newDataInputStream())
 
 android {
     compileSdkVersion 19
@@ -25,11 +25,22 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    signingConfigs {
+        release {
+            storeFile file(properties.getProperty("signing.storefile"))
+            storePassword properties.getProperty("signing.store_passwd")
+            keyAlias properties.getProperty("signing.alias")
+            keyPassword properties.getProperty("signing.key_passwd")
+        }
+    }
+
     buildTypes {
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
+            signingConfig signingConfigs.release
         }
         debug {
             buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
