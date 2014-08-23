@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="org.lastrix.collagemaker.app.PreviewActivity" >
+    <item android:id="@+id/action_apply"
+          android:title="@string/action_apply"
+          android:icon="@android:drawable/ic_dialog_email"
+          android:orderInCategory="1"
+          app:showAsAction="always" />
+
+    <item android:id="@+id/action_cancel"
+          android:title="@string/action_cancel"
+          android:icon="@android:drawable/ic_menu_close_clear_cancel"
+          android:orderInCategory="0"
+          app:showAsAction="always" />
+</menu>

@@ -10,22 +10,22 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import org.lastrix.collagemaker.app.api.InstagramApi;
+import org.lastrix.collagemaker.app.api.InstagramApiException;
 import org.lastrix.collagemaker.app.api.User;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.observables.AndroidObservable;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
 
 
 /**
  * Main activity. Performs user searching and navigation
- * to image selection activity {@link org.lastrix.collagemaker.app.PhotoPickerActivity}.
+ * to image selection activity {@link CollageActivity}.
  */
 public class RequestActivity extends ActionBarActivity {
 
@@ -101,7 +101,7 @@ public class RequestActivity extends ActionBarActivity {
 
     /**
      * Processes user search request results.
-     * See {@link org.lastrix.collagemaker.app.UserSearchRequest} .
+     * See {@link org.lastrix.collagemaker.app.RequestActivity.UserSearchRequest} .
      */
     private static class UserSearchSubscriber extends Subscriber<User> {
         private final RequestActivity mActivity;
@@ -153,7 +153,7 @@ public class RequestActivity extends ActionBarActivity {
             }
             //launch PhotoPickerActivity
             final Bundle bundle = mActivity.mUsersFound.get(0).asBundle();
-            final Intent intent = new Intent(mActivity, PhotoPickerActivity.class);
+            final Intent intent = new Intent(mActivity, CollageActivity.class);
             intent.putExtras(bundle);
             mActivity.startActivity(intent);
         }
@@ -182,6 +182,37 @@ public class RequestActivity extends ActionBarActivity {
         @Override
         public void onNext(User user) {
             mActivity.mUsersFound.add(user);
+        }
+    }
+
+    /**
+     * Observable for user searching
+     * <p/>
+     * Created by lastrix on 8/21/14.
+     */
+    static class UserSearchRequest implements Observable.OnSubscribe<User> {
+
+        private final String mUsername;
+
+        public UserSearchRequest(String username) {
+            mUsername = username;
+        }
+
+        @Override
+        public void call(Subscriber<? super User> subscriber) {
+            try {
+                for (User u : InstagramApi.search(mUsername)) {
+                    if (subscriber.isUnsubscribed()) return;
+                    subscriber.onNext(u);
+                }
+                if (!subscriber.isUnsubscribed()) {
+                    subscriber.onCompleted();
+                }
+            } catch (InstagramApiException e) {
+                if (!subscriber.isUnsubscribed()) {
+                    subscriber.onError(e);
+                }
+            }
         }
     }
 }

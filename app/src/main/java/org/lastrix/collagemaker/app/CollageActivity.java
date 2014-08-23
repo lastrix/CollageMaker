@@ -1,9 +1,12 @@
 package org.lastrix.collagemaker.app;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.*;
@@ -17,8 +20,13 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.observables.AndroidObservable;
+import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -27,23 +35,23 @@ import java.util.List;
 /**
  * Created by lastrix on 8/21/14.
  */
-public class PhotoPickerActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.ScreenShotListener {
-    public static final String LOG_TAG = PhotoPickerActivity.class.getSimpleName();
+public class CollageActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.ScreenShotListener {
+    public static final String LOG_TAG = CollageActivity.class.getSimpleName();
     private static final boolean LOG_ALL = false;
     public static final float ZOOM_STEP = 0.5f;
     private User mUser;
     private Subscription mIndexSubscription = null;
+    private Subscription mSaveSubscription = null;
     private ProgressDialog mProgressDialog;
     private PhotoPickerListViewAdapter mAdapter;
     private ListView mList;
     private GFXSurfaceView mGfxSurfaceView;
-    private List<String> mImages;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_photo_picker);
+        setContentView(R.layout.activity_collage);
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
             mUser = User.fromBundle(bundle);
@@ -123,6 +131,11 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
             mIndexSubscription = null;
         }
 
+        if (mSaveSubscription != null) {
+            mSaveSubscription.unsubscribe();
+            mSaveSubscription = null;
+        }
+
         mAdapter = null;
         mProgressDialog = null;
         mUser = null;
@@ -193,7 +206,30 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
 
     @Override
     public void screenShot(final Bitmap bmp) {
-        //TODO: pass bmp somewhere else
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if ( mSaveSubscription != null ) {
+                    throw new IllegalStateException("Already saving image");
+                }
+                mSaveSubscription = AndroidObservable.bindActivity(CollageActivity.this, Observable.create(new SaveBitmapObservable(bmp)))
+                        .subscribeOn(Schedulers.io())
+                        .doOnCompleted(new Action0() {
+                            @Override
+                            public void call() {
+                                //we did it!
+                                Intent intent = new Intent(
+                                        CollageActivity.this,
+                                        PreviewActivity.class);
+                                intent.putExtra(PreviewActivity.FILE_URL, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), "screen")).toString());
+                                startActivity(intent);
+                                mSaveSubscription.unsubscribe();
+                                mSaveSubscription = null;
+                            }
+                        })
+                        .subscribe();
+            }
+        });
     }
 
     /**
@@ -237,7 +273,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
         public View getView(final int position, View convertView, ViewGroup parent) {
             final ViewHolder holder;
             if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.list_item_photo_picker, null);
+                convertView = mInflater.inflate(R.layout.list_item_collage, null);
                 holder = new ViewHolder();
                 holder.image = (ImageView) convertView.findViewById(R.id.image);
 
@@ -310,14 +346,14 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
      * Listens {@link PopularPhotoRequest} observable
      * and on success passes all photos to Bitmap manager.
      */
-    static class PhotosSubscriber extends Subscriber<Photo> {
-        private PhotoPickerActivity mActivity;
+    private static class PhotosSubscriber extends Subscriber<Photo> {
+        private CollageActivity mActivity;
         private ProgressDialog mProgressDialog;
         private List<String> mThumbnails = new LinkedList<String>();
         private List<String> mImages = new LinkedList<String>();
 
 
-        public PhotosSubscriber(PhotoPickerActivity activity, ProgressDialog progressDialog) {
+        public PhotosSubscriber(CollageActivity activity, ProgressDialog progressDialog) {
             this.mActivity = activity;
             mProgressDialog = progressDialog;
         }
@@ -356,7 +392,7 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
      * Observable for fetching user popular image urls.
      * Created by lastrix on 8/21/14.
      */
-    static class PopularPhotoRequest implements Observable.OnSubscribe<Photo> {
+    private static class PopularPhotoRequest implements Observable.OnSubscribe<Photo> {
         private final User mUser;
 
         public PopularPhotoRequest(User user) {
@@ -403,6 +439,37 @@ public class PhotoPickerActivity extends ActionBarActivity implements AdapterVie
             } catch (InstagramApiException e) {
                 //notify error
                 if ( !subscriber.isUnsubscribed()) {
+                    subscriber.onError(e);
+                }
+            }
+        }
+    }
+
+    private class SaveBitmapObservable implements Observable.OnSubscribe<Object> {
+        private final Bitmap mBmp;
+
+        public SaveBitmapObservable(Bitmap bmp) {
+            this.mBmp = bmp;
+        }
+
+        @Override
+        public void call(Subscriber<? super Object> subscriber) {
+            File f = new File(Environment.getExternalStorageDirectory(), "screen");
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(f);
+                mBmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                fos.flush();
+                fos.close();
+                if ( !subscriber.isUnsubscribed() ){
+                    subscriber.onCompleted();
+                }
+            } catch (FileNotFoundException e) {
+                if ( !subscriber.isUnsubscribed() ){
+                    subscriber.onError(e);
+                }
+            } catch (IOException e) {
+                if ( !subscriber.isUnsubscribed() ){
                     subscriber.onError(e);
                 }
             }
