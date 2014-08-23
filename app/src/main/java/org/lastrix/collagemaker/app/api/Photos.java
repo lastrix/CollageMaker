@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * This container is used as database.
+ * This container is used as index database.
  * Holds information about user pictures (including different resolution).
  * No real image is stored here - only urls.
  * Created by lastrix on 8/21/14.
@@ -48,11 +48,10 @@ public class Photos {
      * Add photo urls
      *
      * @param thumbnailUrl          -- smallest image url
-     * @param lowResolutionUrl      -- medium image url
      * @param standardResolutionUrl -- image url
      */
-    public void addPhoto(String thumbnailUrl, String lowResolutionUrl, String standardResolutionUrl) {
-        mPhotos.add(new Photo(thumbnailUrl, lowResolutionUrl, standardResolutionUrl));
+    public void addPhoto(String thumbnailUrl, String standardResolutionUrl) {
+        mPhotos.add(new Photo(thumbnailUrl, standardResolutionUrl));
     }
 
     @Override
@@ -68,68 +67,4 @@ public class Photos {
                 '}';
     }
 
-    /**
-     * Holds  image's urls.
-     * See {@link #getStandardResolutionUrl()} for further details.
-     */
-    public static class Photo {
-        private final String mThumbnailUrl;
-        private final String mLowResolutionUrl;
-        private final String mStandardResolutionUrl;
-
-        public Photo(String mThumbnailUrl, String mLowResolutionUrl, String mStandardResolutionUrl) {
-            this.mThumbnailUrl = mThumbnailUrl;
-            this.mLowResolutionUrl = mLowResolutionUrl;
-            this.mStandardResolutionUrl = mStandardResolutionUrl;
-        }
-
-        /**
-         * Return smallest image url
-         *
-         * @return url
-         */
-        public String getThumbnailUrl() {
-            return mThumbnailUrl;
-        }
-
-        /**
-         * Return medium image url
-         *
-         * @return url
-         */
-        public String getLowResolutionUrl() {
-            return mLowResolutionUrl;
-        }
-
-        /**
-         * Return image url
-         *
-         * @return url
-         */
-        public String getStandardResolutionUrl() {
-            return mStandardResolutionUrl;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return this == o;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = mThumbnailUrl.hashCode();
-            result = 31 * result + mLowResolutionUrl.hashCode();
-            result = 31 * result + mStandardResolutionUrl.hashCode();
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "Photo{" +
-                    "mThumbnailUrl='" + mThumbnailUrl + '\'' +
-                    ", mLowResolutionUrl='" + mLowResolutionUrl + '\'' +
-                    ", mStandardResolutionUrl='" + mStandardResolutionUrl + '\'' +
-                    '}';
-        }
-    }
 }

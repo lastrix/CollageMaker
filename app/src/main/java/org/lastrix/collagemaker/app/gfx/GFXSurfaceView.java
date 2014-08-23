@@ -10,6 +10,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+
 /**
  * Custom GLSurfaceView.
  * Created by lastrix on 8/17/14.
@@ -36,7 +40,7 @@ public class GFXSurfaceView extends GLSurfaceView {
     private void init() {
         setEGLContextClientVersion(2);
 
-        mRenderer = new GFXRenderer();
+        mRenderer = new GFXRenderer(this);
 
         setEGLConfigChooser(8,8,8,8,0,0);
         setRenderer(mRenderer);
@@ -53,13 +57,11 @@ public class GFXSurfaceView extends GLSurfaceView {
         mRenderer.onDestroy();
     }
 
-    /**
-     * Add bitmap to renderer
-     *
-     * @param bitmap -- the bitmap
-     */
-    public void add(Bitmap bitmap) {
-        mRenderer.add(bitmap);
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mRenderer.resume();
     }
 
     /**
@@ -133,6 +135,11 @@ public class GFXSurfaceView extends GLSurfaceView {
                 mScreenShotListener.screenShot(bmp);
             }
         });
+    }
+
+    public void setImages(List<String> strings) {
+        mRenderer.setImages(strings);
+        requestRender();
     }
 
     public interface ScreenShotListener {

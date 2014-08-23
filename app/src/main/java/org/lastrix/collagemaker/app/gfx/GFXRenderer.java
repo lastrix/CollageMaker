@@ -6,6 +6,9 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.view.View;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -70,6 +73,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private final float[] mMvp = new float[16];
     private final List<GFXEntity> mEntities = new LinkedList<GFXEntity>();
     private final Deque<GFXEntity> mDrawOrder = new LinkedList<GFXEntity>();
+    private final GFXSurfaceView mGfxSurfaceView;
     private volatile boolean mDestroy = false;
 
     private float mZoom = 3;
@@ -88,8 +92,10 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private int mVertexShader;
     private int mTextureShader;
 
+    private final Object mLock = new Object();
 
-    public GFXRenderer() {
+    public GFXRenderer(GFXSurfaceView gfxSurfaceView) {
+        mGfxSurfaceView = gfxSurfaceView;
     }
 
     private static FloatBuffer loadToBuffer(float[] values) {
@@ -197,12 +203,10 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
         glUniform1i(mSamplerLoc, 0);
 
-        synchronized (mMvp) {
-            synchronized (mDrawOrder) {
+        synchronized (mLock) {
                 for (GFXEntity entity : mDrawOrder) {
                     if (entity.isChecked()) drawEntity(unused, entity);
                 }
-            }
         }
 
         glDisableVertexAttribArray(mPositionHandle);
@@ -256,7 +260,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private void dispose() {
         mDrawOrder.clear();
         for (GFXEntity entity : mEntities) {
-            entity.onDestroy();
+            entity.clean();
         }
         mEntities.clear();
         glDeleteProgram(mProgram);
@@ -268,16 +272,6 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         mDestroy = true;
     }
 
-    public void add(Bitmap bitmap) {
-        if (!mDestroy) {
-            GFXEntity entity = new GFXEntity(bitmap);
-            mEntities.add(entity);
-            synchronized (mDrawOrder) {
-                mDrawOrder.add(entity);
-            }
-        }
-    }
-
 
     public float getZoom() {
         return mZoom;
@@ -287,7 +281,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         if ( mZoom >= 0.5f && mZoom < 10f) {
             this.mZoom = mZoom;
             float ratio = (float) width / height;
-            synchronized (mMvp) {
+            synchronized (mLock) {
                 // this projection matrix is applied to object coordinates
                 // in the onDrawFrame() method
 
@@ -300,13 +294,41 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     public void setChecked(int position, boolean state) {
-        GFXEntity e = mEntities.get(position);
+        final GFXEntity e = mEntities.get(position);
         e.setChecked(state);
         putToTop(e);
+
+        if ( e.mBitmap == null && e.mTextureId == 0 ){
+            loadImage(e);
+        }
+    }
+
+    private void loadImage(final GFXEntity e) {
+        ImageLoader.getInstance().loadImage(e.mUrl, new SimpleImageLoadingListener(){
+            @Override
+            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                e.mBitmap = loadedImage;
+                mGfxSurfaceView.requestRender();
+            }
+        });
+    }
+
+    void resume(){
+        mGfxSurfaceView.queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (mLock){
+                    for(GFXEntity entity : mEntities){
+                        entity.mTextureId = 0;
+                        loadImage(entity);
+                    }
+                }
+            }
+        });
     }
 
     void putToTop(GFXEntity e) {
-        synchronized (mDrawOrder) {
+        synchronized (mLock) {
             mDrawOrder.remove(e);
             mDrawOrder.add(e);
         }
@@ -389,28 +411,40 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         return null;
     }
 
+    public void setImages(List<String> strings) {
+        synchronized (mLock){
+            mDrawOrder.clear();
+            mEntities.clear();
+            GFXEntity entity;
+            for( String url : strings){
+                entity = new GFXEntity(url);
+                mEntities.add(entity);
+                mDrawOrder.add(entity);
+            }
+        }
+    }
+
     static class GFXEntity {
-        private Bitmap mBitmap;
+        private volatile Bitmap mBitmap;
         private float mX, mY;
         private float mScale;
-        private int textureId = -1;
+        private int mTextureId;
         private volatile boolean mChecked;
         private float mRatio;
+        private String mUrl;
 
-        private GFXEntity(Bitmap bitmap) {
-            this(bitmap, 0f, 0f, 1f);
+        private GFXEntity(String url) {
+            this(url, 0f, 0f, 1f);
         }
 
-        private GFXEntity(Bitmap bitmap, float x, float y, float scale) {
-            this.mBitmap = bitmap;
+        private GFXEntity(String url, float x, float y, float scale) {
+            this.mUrl = url;
+            this.mBitmap = null;
             this.mX = x;
             this.mY = y;
             this.mScale = scale;
-            mRatio = (float)bitmap.getWidth() / (float)bitmap.getHeight();
-        }
-
-        public Bitmap getBitmap() {
-            return mBitmap;
+            this.mTextureId = 0;
+            mRatio = 1f;
         }
 
         public float getX() {
@@ -429,7 +463,6 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
             this.mY = mY;
         }
 
-
         public float getScale() {
             return mScale;
         }
@@ -438,37 +471,39 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
             this.mScale = mScale;
         }
 
-        public void onDestroy() {
-            mBitmap = null;
-            if (textureId > 0) {
-                glDeleteTextures(1, new int[]{textureId}, 0);
-            }
-        }
-
         public boolean isChecked() {
-            return mChecked;
+            return mChecked && (mTextureId > 0 || mBitmap != null);
         }
 
         public void setChecked(boolean checked) {
             this.mChecked = checked;
         }
 
+        public void clean(){
+            if ( mTextureId != 0){
+                glDeleteTextures(1, new int[]{mTextureId}, 0);
+            }
+            mTextureId = 0;
+            mBitmap = null;
+        }
+
         public void onSetup(GL10 unused) {
             //don't show this thing
-            if (textureId <= 0) {
+            if (mTextureId == 0) {
                 //load texture
                 int tex[] = new int[1];
                 glGenTextures(1, tex, 0);
-                textureId = tex[0];
+                mTextureId = tex[0];
 
-                glBindTexture(GL_TEXTURE_2D, textureId);
+                glBindTexture(GL_TEXTURE_2D, mTextureId);
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 GLUtils.texImage2D(GL_TEXTURE_2D, 0, mBitmap, 0);
+                mRatio = (float)mBitmap.getWidth() / (float)mBitmap.getHeight();
                 mBitmap = null;
             } else {
-                glBindTexture(GL_TEXTURE_2D, textureId);
+                glBindTexture(GL_TEXTURE_2D, mTextureId);
             }
         }
 

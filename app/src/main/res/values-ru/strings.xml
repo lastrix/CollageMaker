@@ -11,12 +11,12 @@
     <string name="error_user_selection_not_implemented">Ошибка: было обнаружено несколько пользователей с таким именем, выбор пользователя из списка не возможен</string>
     <string name="message_searching_for_user">Ищу пользователя…</string>
     <string name="accept">Принять</string>
-    <string name="message_downloading_popular_photos">Загружаю популярные фотографии пользователя…</string>
+    <string name="message_downloading_popular_photos_list">Загружаю список популярных фотографий пользователя…</string>
     <string name="error_index_loading_failed">Ошибка: не удалось загрузить список популярных фотографий пользователя</string>
     <string name="error_image_loading_failed">Ошибка: не удалось загрузить изображения</string>
     <string name="all">Все</string>
     <string name="none">Ничего</string>
-    <string name="zoom_in">Zoom in</string>
-    <string name="zoom_out">Zoom out</string>
+    <string name="zoom_in">Увеличить</string>
+    <string name="zoom_out">Уменьшить</string>
 
 </resources>

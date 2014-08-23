@@ -1,12 +1,20 @@
 package org.lastrix.collagemaker.app.api;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lastrix.collagemaker.app.BuildConfig;
-import org.lastrix.collagemaker.app.util.HttpHelper;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,11 +40,12 @@ public class InstagramApi {
     public static final String JSON_DATA = "data";
     public static final String JSON_URL_ATTR = "url";
     public static final String JSON_THUMBNAIL = "thumbnail";
-    public static final String JSON_LOW_RESOLUTION = "low_resolution";
     public static final String JSON_STANDARD_RESOLUTION = "standard_resolution";
     public static final String JSON_IMAGES = "images";
     public static final String JSON_NEXT_URL_ATTR = "next_url";
     public static final String JSON_PAGINATION = "pagination";
+    public static final int HTTP_OK = 200;
+    public static final HttpClient CLIENT = new DefaultHttpClient();
 
     /**
      * Search for user(s) by name
@@ -89,7 +98,6 @@ public class InstagramApi {
                 entry = data.getJSONObject(i).getJSONObject(JSON_IMAGES);
                 photos.addPhoto(
                         getUrlFrom(entry, JSON_THUMBNAIL),
-                        getUrlFrom(entry, JSON_LOW_RESOLUTION),
                         getUrlFrom(entry, JSON_STANDARD_RESOLUTION)
                 );
             }
@@ -125,14 +133,13 @@ public class InstagramApi {
      * @param url -- the api call url
      * @throws IOException   in case of connection problems
      * @throws JSONException in case of json parsing problems
-     * @throws JSONException
      */
     private static JSONObject apiCall(String url) throws IOException, JSONException {
-        String responseString = HttpHelper.get(url);
+        String responseString = get(url);
         if (responseString == null) return null;
         JSONObject response = new JSONObject(responseString);
         JSONObject meta = response.getJSONObject(JSON_META);
-        if (meta.getInt(JSON_META_CODE_ATTR) == HttpHelper.HTTP_OK) {
+        if (meta.getInt(JSON_META_CODE_ATTR) == HTTP_OK) {
             return response;
         }
         return null;
@@ -148,5 +155,36 @@ public class InstagramApi {
      */
     private static String getUrlFrom(JSONObject entry, String field) throws JSONException {
         return entry.getJSONObject(field).getString(JSON_URL_ATTR);
+    }
+
+    /**
+     * Get http response body for url.
+     *
+     * @param url -- request url
+     * @return response body or null
+     * @throws java.io.IOException in case of connection problems
+     */
+    public static String get(String url) throws IOException {
+        StringBuilder builder = new StringBuilder();
+        HttpGet get = new HttpGet(url);
+
+        //fetch response
+        HttpResponse response = CLIENT.execute(get);
+        StatusLine statusLine = response.getStatusLine();
+        int statusCode = statusLine.getStatusCode();
+        if (statusCode == HTTP_OK) {
+            HttpEntity entity = response.getEntity();
+            InputStream content = entity.getContent();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(content));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            entity.consumeContent();
+        } else {
+            //in case error code return null.
+            return null;
+        }
+        return builder.toString();
     }
 }

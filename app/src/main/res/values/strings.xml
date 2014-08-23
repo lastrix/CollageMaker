@@ -11,7 +11,7 @@
     <string name="error_user_selection_not_implemented">Error: search returned multiple users. Selection is not implemented.</string>
     <string name="message_searching_for_user">Searching for user…</string>
     <string name="accept">Accept</string>
-    <string name="message_downloading_popular_photos">Downloading popular photos…</string>
+    <string name="message_downloading_popular_photos_list">Downloading popular photos list…</string>
     <string name="error_index_loading_failed">Error: failed to load list of popular user images</string>
     <string name="error_image_loading_failed">Error: image loading failed</string>
     <string name="all">All</string>
