@@ -1,17 +1,15 @@
 package org.lastrix.collagemaker.app.gfx;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
-import android.opengl.GLU;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 
 /**
@@ -25,7 +23,7 @@ public class GFXSurfaceView extends GLSurfaceView {
     private GFXRenderer.GFXEntity mDragged;
     private float mPreviousX;
     private float mPreviousY;
-    private ScreenShotListener mScreenShotListener;
+    private GFXListener mGfxListener;
 
     public GFXSurfaceView(Context context) {
         super(context);
@@ -37,11 +35,15 @@ public class GFXSurfaceView extends GLSurfaceView {
         init();
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private void init() {
         setEGLContextClientVersion(2);
 
         mRenderer = new GFXRenderer(this);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            setPreserveEGLContextOnPause(true);
+        }
         setEGLConfigChooser(8,8,8,8,0,0);
         setRenderer(mRenderer);
 
@@ -61,7 +63,7 @@ public class GFXSurfaceView extends GLSurfaceView {
     @Override
     public void onResume() {
         super.onResume();
-        mRenderer.resume();
+        requestRender();
     }
 
     /**
@@ -75,12 +77,12 @@ public class GFXSurfaceView extends GLSurfaceView {
         requestRender();
     }
 
-    public ScreenShotListener getScreenShotListener() {
-        return mScreenShotListener;
+    public GFXListener getGfxListener() {
+        return mGfxListener;
     }
 
-    public void setScreenShotListener(ScreenShotListener mScreenShotListener) {
-        this.mScreenShotListener = mScreenShotListener;
+    public void setGfxListener(GFXListener mGFXListener) {
+        this.mGfxListener = mGFXListener;
     }
 
     @Override
@@ -127,14 +129,9 @@ public class GFXSurfaceView extends GLSurfaceView {
 
 
     public void takeScreen() {
-        if ( mScreenShotListener == null ) return;
-        queueEvent(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bmp = mRenderer.takeScreen(getWidth(), getHeight());
-                mScreenShotListener.screenShot(bmp);
-            }
-        });
+        if ( mGfxListener == null ) return;
+        mRenderer.requestScreenShot();
+        requestRender();
     }
 
     public void setImages(List<String> strings) {
@@ -142,8 +139,10 @@ public class GFXSurfaceView extends GLSurfaceView {
         requestRender();
     }
 
-    public interface ScreenShotListener {
+    public interface GFXListener {
 
         void screenShot(Bitmap bmp);
+
+        void loading(int progress, int max);
     }
 }

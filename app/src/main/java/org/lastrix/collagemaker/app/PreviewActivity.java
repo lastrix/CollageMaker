@@ -31,15 +31,14 @@ public class PreviewActivity extends ActionBarActivity {
 
         Bundle bundle = getIntent().getExtras();
         mUri = bundle.getString(FILE_URL);
-        if ( LOG_ALL) {
-            Log.v(LOG_TAG, "Uri = " + mUri);
-        }
-
         if ( mUri == null ){
             finish();
         } else {
             mImageView = (ImageView) findViewById(R.id.preview);
             mImageView.setImageBitmap(ImageLoader.getInstance().getMemoryCache().get(mUri));
+        }
+        if ( LOG_ALL) {
+            Log.v(LOG_TAG, "onCreate()");
         }
     }
 
@@ -72,5 +71,13 @@ public class PreviewActivity extends ActionBarActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if ( LOG_ALL) {
+            Log.v(LOG_TAG, "onResume()");
+        }
     }
 }

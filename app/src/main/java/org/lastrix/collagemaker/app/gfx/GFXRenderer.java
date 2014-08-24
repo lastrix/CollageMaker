@@ -17,6 +17,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static android.opengl.GLES20.*;
 
@@ -62,6 +63,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
             1.0f, 0.0f
     };
     private static final short TILE_ORDER[] = {0, 1, 2, 0, 2, 3}; // order to draw vertices
+    private static final boolean LOG_ALL = true;
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
     private final float[] mScratch = new float[16];
@@ -75,6 +77,8 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private final Deque<GFXEntity> mDrawOrder = new LinkedList<GFXEntity>();
     private final GFXSurfaceView mGfxSurfaceView;
     private volatile boolean mDestroy = false;
+    private volatile boolean mTakeScreen = false;
+    private AtomicInteger mPending =  new AtomicInteger(0);
 
     private float mZoom = 3;
 
@@ -151,6 +155,8 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         loadProgram();
 
         loadBuffers();
+
+        reloadImages();
     }
 
     private void loadBuffers() {
@@ -216,6 +222,12 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
         glUseProgram(0);
 
+        if ( mTakeScreen ){
+            mGfxSurfaceView.getGfxListener()
+                    .screenShot(takeScreen(mGfxSurfaceView.getWidth(), mGfxSurfaceView.getHeight()));
+            mTakeScreen = false;
+        }
+
     }
 
     public float[] getMvp() {
@@ -226,7 +238,9 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         int size = width * height;
         int[] array = new int[size];
         IntBuffer buf = IntBuffer.wrap(array);
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+        synchronized (mLock) {
+            glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+        }
 
         for (int i = 0; i < size; ++i) {
             // The alpha and green channels' positions are preserved while the red and blue are swapped
@@ -299,34 +313,37 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
         putToTop(e);
 
         if ( e.mBitmap == null && e.mTextureId == 0 ){
-            loadImage(e);
+            loadImage(e, true);
         }
     }
 
-    private void loadImage(final GFXEntity e) {
+    private void loadImage(final GFXEntity e, boolean notifyListener) {
+        mPending.incrementAndGet();
+        if ( notifyListener ){
+            mGfxSurfaceView.getGfxListener().loading(0, mPending.get());
+        }
         ImageLoader.getInstance().loadImage(e.mUrl, new SimpleImageLoadingListener(){
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                 e.mBitmap = loadedImage;
-                mGfxSurfaceView.requestRender();
+                int progress = mPending.decrementAndGet();
+                if ( progress == 0) {
+                    mGfxSurfaceView.requestRender();
+                }
+                mGfxSurfaceView.getGfxListener().loading(progress, -1);
             }
         });
     }
 
-    void resume(){
-        mGfxSurfaceView.queueEvent(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (mLock){
-                    for(GFXEntity entity : mEntities){
-                        entity.mTextureId = 0;
-                        if ( entity.isChecked()) {
-                            loadImage(entity);
-                        }
-                    }
-                }
+    private void reloadImages() {
+        for (GFXEntity entity : mEntities) {
+            entity.mTextureId = 0;
+            entity.mBitmap = null;
+            if (entity.mChecked) {
+                loadImage(entity, false);
             }
-        });
+            mGfxSurfaceView.getGfxListener().loading(0, mPending.get());
+        }
     }
 
     void putToTop(GFXEntity e) {
@@ -424,6 +441,10 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
                 mDrawOrder.add(entity);
             }
         }
+    }
+
+    public void requestScreenShot() {
+        mTakeScreen = true;
     }
 
     static class GFXEntity {

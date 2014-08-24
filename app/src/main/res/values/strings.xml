@@ -25,5 +25,6 @@
     <string name="action_cancel">Cancel</string>
     <string name="my_collage">My collage</string>
     <string name="send_email_using">Send email using</string>
+    <string name="message_loading">Loading</string>
 
 </resources>

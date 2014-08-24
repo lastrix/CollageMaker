@@ -18,9 +18,10 @@
     <string name="none">Ничего</string>
     <string name="zoom_in">Увеличить</string>
     <string name="zoom_out">Уменьшить</string>
-    <string name="action_apply">Apply</string>
-    <string name="action_cancel">Cancel</string>
-    <string name="my_collage">My collage</string>
-    <string name="send_email_using">Send email using</string>
+    <string name="action_apply">Принять</string>
+    <string name="action_cancel">Отменить</string>
+    <string name="my_collage">Мой коллаж</string>
+    <string name="send_email_using">Отправить письмо используя:</string>
+    <string name="message_loading">Загружаю фотографии…</string>
 
 </resources>

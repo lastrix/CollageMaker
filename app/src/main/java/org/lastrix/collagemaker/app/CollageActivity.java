@@ -3,10 +3,8 @@ package org.lastrix.collagemaker.app;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.*;
@@ -23,10 +21,6 @@ import rx.android.observables.AndroidObservable;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -35,7 +29,7 @@ import java.util.List;
 /**
  * Created by lastrix on 8/21/14.
  */
-public class CollageActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.ScreenShotListener {
+public class CollageActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.GFXListener {
     public static final String LOG_TAG = CollageActivity.class.getSimpleName();
     private static final boolean LOG_ALL = true;
     public static final float ZOOM_STEP = 0.5f;
@@ -47,6 +41,9 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
     private PhotoPickerListViewAdapter mAdapter;
     private ListView mList;
     private GFXSurfaceView mGfxSurfaceView;
+    private int mProgressMax = 0;
+    private boolean mAllSelected = false;
+    private boolean mNoneSelected = true;
 
 
     @Override
@@ -80,7 +77,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
     private void loadIndex() {
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setMessage(getResources().getString(R.string.message_downloading_popular_photos_list));
+        mProgressDialog.setTitle(R.string.message_downloading_popular_photos_list);
         mProgressDialog.setCancelable(false);
         mProgressDialog.show();
 
@@ -105,7 +102,10 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         if (mUser == null) finish();
         ImageLoader.getInstance().resume();
         mGfxSurfaceView.onResume();
-        mGfxSurfaceView.setScreenShotListener(this);
+        mGfxSurfaceView.setGfxListener(this);
+        if ( LOG_ALL){
+            Log.v(LOG_TAG, "onResume()");
+        }
     }
 
     @Override
@@ -114,13 +114,19 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         ImageLoader.getInstance().pause();
         mGfxSurfaceView.onPause();
         //to prevent possible activity leak
-        mGfxSurfaceView.setScreenShotListener(null);
+        mGfxSurfaceView.setGfxListener(null);
+        if ( LOG_ALL){
+            Log.v(LOG_TAG, "onPause()");
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         ImageLoader.getInstance().stop();
+        if ( LOG_ALL){
+            Log.v(LOG_TAG, "onStop()");
+        }
     }
 
     @Override
@@ -163,11 +169,19 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                 return true;
 
             case R.id.select_all:
-                setCheckedStateAll(true);
+                if ( !mAllSelected ) {
+                    setCheckedStateAll(true);
+                    mAllSelected = true;
+                    mNoneSelected = false;
+                }
                 return true;
 
             case R.id.select_none:
-                setCheckedStateAll(false);
+                if ( !mNoneSelected) {
+                    setCheckedStateAll(false);
+                    mAllSelected = false;
+                    mNoneSelected = true;
+                }
                 return true;
 
             case R.id.zoom_in:
@@ -194,6 +208,8 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        mNoneSelected = false;
+        mAllSelected = false;
         //TODO: rework it
         final boolean newState = mList.isItemChecked(position);
         view.setSelected(newState);
@@ -231,6 +247,37 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                         .subscribe();
             }
         });
+    }
+
+    @Override
+    public void loading(final int progress, final int max) {
+        if ( LOG_ALL ){
+            Log.v(LOG_TAG, String.format("Call to loading(): %d %d", progress, max));
+        }
+        if ( max == -1 && progress != 0 ){
+            mProgressDialog.setProgress(mProgressMax - progress);
+        } else {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (max > 0) {
+                        if (mProgressMax == 0) {
+                            mProgressDialog = new ProgressDialog(CollageActivity.this);
+                            mProgressDialog.setIndeterminate(false);
+                            mProgressDialog.setTitle(R.string.message_loading);
+                            mProgressDialog.setProgress(0);
+                            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                            mProgressDialog.setCancelable(false);
+                        }
+                        mProgressMax = max;
+                        mProgressDialog.setMax(mProgressMax);
+                        mProgressDialog.show();
+                    } else {
+                        mProgressDialog.dismiss();
+                    }
+                }
+            });
+        }
     }
 
     /**
