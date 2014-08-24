@@ -62,7 +62,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         mAdapter = new PhotoPickerListViewAdapter(Collections.EMPTY_LIST, getLayoutInflater());
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.preview);
-
+        mGfxSurfaceView.setGfxListener(this);
         mList = (ListView) findViewById(R.id.photos);
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener(this);
@@ -102,7 +102,6 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         if (mUser == null) finish();
         ImageLoader.getInstance().resume();
         mGfxSurfaceView.onResume();
-        mGfxSurfaceView.setGfxListener(this);
         if ( LOG_ALL){
             Log.v(LOG_TAG, "onResume()");
         }
@@ -113,10 +112,11 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         super.onPause();
         ImageLoader.getInstance().pause();
         mGfxSurfaceView.onPause();
-        //to prevent possible activity leak
-        mGfxSurfaceView.setGfxListener(null);
         if ( LOG_ALL){
             Log.v(LOG_TAG, "onPause()");
+        }
+        if ( mProgressDialog.isShowing() ){
+            mProgressDialog.dismiss();
         }
     }
 

@@ -78,6 +78,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
     private final GFXSurfaceView mGfxSurfaceView;
     private volatile boolean mDestroy = false;
     private volatile boolean mTakeScreen = false;
+    private boolean mContextCreation = false;
     private AtomicInteger mPending =  new AtomicInteger(0);
 
     private float mZoom = 3;
@@ -142,7 +143,7 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        glClearColor(0.3f, 0.5f, 0.1f, 1.0f);
+        glClearColor(0.3f, 0.5f, 0.1f, 0.0f);
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -156,7 +157,9 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
         loadBuffers();
 
+        mContextCreation = true;
         reloadImages();
+        mContextCreation = false;
     }
 
     private void loadBuffers() {
@@ -337,9 +340,11 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     private void reloadImages() {
         for (GFXEntity entity : mEntities) {
-            entity.mTextureId = 0;
-            entity.mBitmap = null;
-            if (entity.mChecked) {
+            if ( mContextCreation ) {
+                entity.mTextureId = 0;
+                entity.mBitmap = null;
+            }
+            if (entity.mChecked && (entity.mTextureId == 0 && entity.mBitmap == null)) {
                 loadImage(entity, false);
             }
             mGfxSurfaceView.getGfxListener().loading(0, mPending.get());
@@ -445,6 +450,13 @@ public class GFXRenderer implements GLSurfaceView.Renderer {
 
     public void requestScreenShot() {
         mTakeScreen = true;
+    }
+
+    public void resume() {
+        if ( mPending.get() > 0){
+            mPending.set(0);
+            reloadImages();
+        }
     }
 
     static class GFXEntity {

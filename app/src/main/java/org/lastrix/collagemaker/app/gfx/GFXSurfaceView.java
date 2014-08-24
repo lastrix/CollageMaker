@@ -57,12 +57,14 @@ public class GFXSurfaceView extends GLSurfaceView {
      */
     public void onDestroy() {
         mRenderer.onDestroy();
+        mGfxListener = null;
     }
 
 
     @Override
     public void onResume() {
         super.onResume();
+        mRenderer.resume();
         requestRender();
     }
 
