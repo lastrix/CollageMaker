@@ -23,5 +23,6 @@
     <string name="my_collage">Мой коллаж</string>
     <string name="send_email_using">Отправить письмо используя:</string>
     <string name="message_loading">Загружаю фотографии…</string>
+    <string name="title_loading">Loading</string>
 
 </resources>

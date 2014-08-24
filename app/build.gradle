@@ -7,6 +7,7 @@ buildscript {
     }
 }
 apply plugin: 'android'
+apply plugin: 'idea'
 
 repositories {
     mavenCentral()
@@ -40,9 +41,11 @@ android {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
+            buildConfigField "boolean", "LOG_ALL", "false"
             signingConfig signingConfigs.release
         }
         debug {
+            buildConfigField "boolean", "LOG_ALL", "true"
             buildConfigField "String", "INSTAGRAM_CLIENT_ID", properties.getProperty('instagram_client_id')
         }
     }
@@ -51,10 +54,19 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+
     compile 'com.android.support:appcompat-v7:20.+'
+    // You must install or update the Support Repository through the SDK manager to use this dependency.
     compile 'com.android.support:support-v4:20.+'
 
     compile 'com.netflix.rxjava:rxjava-core:0.19.6'
     compile 'com.netflix.rxjava:rxjava-android:0.19.6'
     compile 'com.nostra13.universalimageloader:universal-image-loader:1.9.2'
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
 }

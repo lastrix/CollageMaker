@@ -12,7 +12,8 @@ import android.widget.*;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-import org.lastrix.collagemaker.app.api.*;
+import org.lastrix.collagemaker.app.api.Photo;
+import org.lastrix.collagemaker.app.api.User;
 import org.lastrix.collagemaker.app.gfx.GFXSurfaceView;
 import rx.Observable;
 import rx.Subscriber;
@@ -31,9 +32,9 @@ import java.util.List;
  */
 public class CollageActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.GFXListener {
     public static final String LOG_TAG = CollageActivity.class.getSimpleName();
-    private static final boolean LOG_ALL = true;
     public static final float ZOOM_STEP = 0.5f;
     public static final String URI_SCREEN_SHOT = "content://lastrix.org/bmp/screen.bmp";
+    private static final boolean LOG_ALL = true;
     private User mUser;
     private Subscription mIndexSubscription = null;
     private Subscription mSaveSubscription = null;
@@ -63,7 +64,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.preview);
         mGfxSurfaceView.setGfxListener(this);
-        mList = (ListView) findViewById(R.id.photos);
+        mList = (ListView) findViewById(R.id.grid_view_photos);
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener(this);
 
@@ -87,7 +88,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                 .subscribe(new PhotosSubscriber(this, mProgressDialog));
     }
 
-    void setThumbnails(List<String> list){
+    void setThumbnails(List<String> list) {
         mAdapter.setThumbnails(new ArrayList<String>(list));
     }
 
@@ -102,7 +103,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         if (mUser == null) finish();
         ImageLoader.getInstance().resume();
         mGfxSurfaceView.onResume();
-        if ( LOG_ALL){
+        if (LOG_ALL) {
             Log.v(LOG_TAG, "onResume()");
         }
     }
@@ -112,10 +113,10 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         super.onPause();
         ImageLoader.getInstance().pause();
         mGfxSurfaceView.onPause();
-        if ( LOG_ALL){
+        if (LOG_ALL) {
             Log.v(LOG_TAG, "onPause()");
         }
-        if ( mProgressDialog.isShowing() ){
+        if (mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
         }
     }
@@ -124,7 +125,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
     protected void onStop() {
         super.onStop();
         ImageLoader.getInstance().stop();
-        if ( LOG_ALL){
+        if (LOG_ALL) {
             Log.v(LOG_TAG, "onStop()");
         }
     }
@@ -169,7 +170,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                 return true;
 
             case R.id.select_all:
-                if ( !mAllSelected ) {
+                if (!mAllSelected) {
                     setCheckedStateAll(true);
                     mAllSelected = true;
                     mNoneSelected = false;
@@ -177,7 +178,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                 return true;
 
             case R.id.select_none:
-                if ( !mNoneSelected) {
+                if (!mNoneSelected) {
                     setCheckedStateAll(false);
                     mAllSelected = false;
                     mNoneSelected = true;
@@ -226,7 +227,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if ( mSaveSubscription != null ) {
+                if (mSaveSubscription != null) {
                     throw new IllegalStateException("Already saving image");
                 }
                 mSaveSubscription = AndroidObservable.bindActivity(CollageActivity.this, Observable.create(new SaveBitmapObservable(bmp)))
@@ -251,10 +252,10 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
     @Override
     public void loading(final int progress, final int max) {
-        if ( LOG_ALL ){
+        if (LOG_ALL) {
             Log.v(LOG_TAG, String.format("Call to loading(): %d %d", progress, max));
         }
-        if ( max == -1 && progress != 0 ){
+        if (max == -1 && progress != 0) {
             mProgressDialog.setProgress(mProgressMax - progress);
         } else {
             runOnUiThread(new Runnable() {
@@ -305,6 +306,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
         /**
          * Set thumbnails list and notify about data set change.
+         *
          * @param mThumbnails -- new list of urls
          */
         void setThumbnails(List<String> mThumbnails) {
@@ -335,13 +337,13 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
             } else {
                 holder = (ViewHolder) convertView.getTag();
             }
-            if ( holder.position != position){
+            if (holder.position != position) {
                 holder.loading = false;
             }
 
             holder.position = position;
             //get thumbnail
-            if ( !holder.loading ) {
+            if (!holder.loading) {
                 // forbid future calls on same item
                 holder.loading = true;
                 ImageLoader.getInstance()
@@ -359,10 +361,10 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         }
 
         private static class ViewHolder {
+            public boolean loading;
             int position;
             ImageView image;
             CheckBox checked;
-            public boolean loading;
         }
 
         private static class ThumbnailLoadingListener extends SimpleImageLoadingListener {
@@ -376,14 +378,14 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
             @Override
             public void onLoadingStarted(String imageUri, View view) {
-                if ( mHolder.position == mPosition ){
+                if (mHolder.position == mPosition) {
                     mHolder.image.setImageResource(android.R.drawable.ic_menu_report_image);
                 }
             }
 
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                if ( mHolder.position == mPosition) {
+                if (mHolder.position == mPosition) {
                     mHolder.image.setImageBitmap(loadedImage);
                 }
             }
@@ -421,7 +423,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         @Override
         public void onError(Throwable e) {
             Log.w(LOG_TAG, "Failed to load photos.", e);
-    //        Toast.makeText(this, R.string.error_index_loading_failed, Toast.LENGTH_LONG).show();
+            //        Toast.makeText(this, R.string.error_index_loading_failed, Toast.LENGTH_LONG).show();
             mActivity = null;
 
             mProgressDialog.dismiss();
@@ -449,47 +451,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
         @Override
         public void call(Subscriber<? super Photo> subscriber) {
-            //temporary holder
-            Photos photos;
-
-            //pagination
-            String nextUrl = null;
-            try {
-                do {
-                    //check we're needed
-                    if ( subscriber.isUnsubscribed() ) return;
-
-                    //do the lengthy job
-                    photos = InstagramApi.popularPhotos(mUser, nextUrl);
-                    if (photos == null) {
-                        //no images
-                        if ( !subscriber.isUnsubscribed()) {
-                            subscriber.onCompleted();
-                        }
-                        return;
-                    }
-                    nextUrl = photos.getNextUrl();
-
-                    //check again
-                    if ( subscriber.isUnsubscribed() ) return;
-
-                    //pass to subscriber
-                    for (Photo photo : photos.getPhotos()) {
-                        subscriber.onNext(photo);
-                    }
-                } while (nextUrl != null && !subscriber.isUnsubscribed());
-
-                //notify complete
-                if ( !subscriber.isUnsubscribed()) {
-                    subscriber.onCompleted();
-                }
-
-            } catch (InstagramApiException e) {
-                //notify error
-                if ( !subscriber.isUnsubscribed()) {
-                    subscriber.onError(e);
-                }
-            }
+            subscriber.onCompleted();
         }
     }
 
@@ -503,7 +465,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         @Override
         public void call(Subscriber<? super Object> subscriber) {
             ImageLoader.getInstance().getMemoryCache().put(URI_SCREEN_SHOT, mBmp);
-            if ( !subscriber.isUnsubscribed() ){
+            if (!subscriber.isUnsubscribed()) {
                 subscriber.onCompleted();
             }
         }

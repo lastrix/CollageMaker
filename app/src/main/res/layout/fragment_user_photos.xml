@@ -1,0 +1,15 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.lastrix.collagemaker.app.UserPhotosFragment">
+
+
+    <GridView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/grid_view_photos"
+            android:layout_gravity="top"
+            android:numColumns="@integer/user_photos_num_columns"
+            android:choiceMode="multipleChoice"/>
+</FrameLayout>

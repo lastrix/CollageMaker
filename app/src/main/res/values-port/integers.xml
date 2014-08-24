@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="activity_request_list_weight">40</integer>
+    <integer name="activity_request_container_weight">60</integer>
+    <integer name="user_photos_num_columns">2</integer>
+</resources>

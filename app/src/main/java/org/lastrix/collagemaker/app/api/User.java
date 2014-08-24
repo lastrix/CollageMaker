@@ -1,5 +1,6 @@
 package org.lastrix.collagemaker.app.api;
 
+import android.content.ContentValues;
 import android.os.Bundle;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -124,5 +125,14 @@ public class User {
         bundle.putString(FIELD_USERNAME, mUsername);
         bundle.putString(FIELD_PHOTO_URL, mPhotoUrl);
         return bundle;
+    }
+
+    public ContentValues asContentValues() {
+        final ContentValues values = new ContentValues(4);
+        values.put(FIELD_ID, mId);
+        values.put(FIELD_NAME, mName);
+        values.put(FIELD_USERNAME, mUsername);
+        values.put(FIELD_PHOTO_URL, mPhotoUrl);
+        return values;
     }
 }

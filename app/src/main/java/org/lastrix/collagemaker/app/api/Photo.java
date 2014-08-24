@@ -1,7 +1,5 @@
 package org.lastrix.collagemaker.app.api;
 
-import android.graphics.Bitmap;
-
 /**
  * Holds  image's urls.
  * See {@link #getStandardResolutionUrl()} for further details.

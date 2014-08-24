@@ -1,218 +1,114 @@
 package org.lastrix.collagemaker.app;
 
-import android.app.ProgressDialog;
+import android.annotation.TargetApi;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
-import org.lastrix.collagemaker.app.api.InstagramApi;
-import org.lastrix.collagemaker.app.api.InstagramApiException;
+import android.support.v7.widget.SearchView;
+import android.view.Menu;
+import android.view.MenuItem;
 import org.lastrix.collagemaker.app.api.User;
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.android.observables.AndroidObservable;
-import rx.schedulers.Schedulers;
-
-import java.util.LinkedList;
-import java.util.List;
+import org.lastrix.collagemaker.app.api.UserSearchTask;
 
 
 /**
  * Main activity. Performs user searching and navigation
  * to image selection activity {@link CollageActivity}.
  */
-public class RequestActivity extends ActionBarActivity {
+public class RequestActivity extends ActionBarActivity implements UserListFragment.Listener {
 
     public static final String LOG_TAG = RequestActivity.class.getSimpleName();
-    private final static boolean LOG_ALL = false;
+    private final static boolean LOG_ALL = BuildConfig.LOG_ALL;
 
-    private EditText mEtUser;
-    private Subscription mSubscription = null;
-    private Button mBtnCollage;
-    private List<User> mUsersFound = new LinkedList<User>();
-    private ProgressDialog mProgressDialog;
+    private UserListFragment mUserListFragment;
+    private boolean mTwoPane = false;
+    private User mSelectedUser = null;
+    private UserSearchTask mSearchTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_request);
-        this.mEtUser = (EditText) findViewById(R.id.user);
-        this.mBtnCollage = (Button) findViewById(R.id.collage);
 
-        //setup progress dialog
-        mProgressDialog = new ProgressDialog(this);
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setMessage(getResources().getString(R.string.message_searching_for_user));
-        mProgressDialog.setCancelable(false);
+
+        mUserListFragment = (UserListFragment) getSupportFragmentManager().findFragmentById(R.id.user_list);
+
+        if (findViewById(R.id.user_photos) != null) {
+            //install photos fragment
+            mTwoPane = true;
+        }
     }
 
 
-    public void onCollageClick(View view) {
-        //actually this should can't happen, but who knows?
-        if (mSubscription != null) {
-            throw new RuntimeException("Previous call was not finished.");
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mSearchTask != null) {
+            mSearchTask.cancel(true);
+            mSearchTask = null;
         }
+    }
 
-        //do checks
-        final String user = mEtUser.getText().toString();
-        if (TextUtils.isEmpty(user)) {
-            Toast.makeText(this, R.string.error_no_username_specified, Toast.LENGTH_LONG).show();
-            return;
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_request, menu);
+
+        final SearchView searchText = getSearchView(menu);
+        searchText.setQueryHint(getString(R.string.hint_search_user));
+        searchText.setOnQueryTextListener(mUserListFragment.getQueryTextListener());
+
+        return true;
+    }
+
+    private SearchView getSearchView(Menu menu) {
+        final SearchView searchText;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            final MenuItem menuItem = menu.findItem(R.id.action_search);
+            searchText = (SearchView) MenuItemCompat.getActionView(menuItem);
+        } else {
+            searchText = (SearchView) menu.findItem(R.id.action_search).getActionView();
         }
+        return searchText;
+    }
 
-        if (LOG_ALL) {
-            Log.v(LOG_TAG, "Checks started for user " + user);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_search:
+                //let ActionBar expand SearchView
+                return false;
+
+            default:
+                return false;
         }
-
-        mBtnCollage.setEnabled(false);
-
-        //clean up state
-        mUsersFound.clear();
-        mProgressDialog.show();
-
-        //run fetch
-        mSubscription = AndroidObservable.bindActivity(this, Observable.create(new UserSearchRequest(user)))
-                .subscribeOn(Schedulers.io())
-                .subscribe(new UserSearchSubscriber(this));
     }
 
     @Override
     protected void onDestroy() {
-        //there is no reason to wait termination.
-        mUsersFound.clear();
-        if (mSubscription != null) {
-            mSubscription.unsubscribe();
-            mSubscription = null;
-        }
-
-        //nullify links
-        mUsersFound = null;
-        mEtUser = null;
-        mProgressDialog = null;
-        mBtnCollage = null;
+        this.mUserListFragment = null;
         super.onDestroy();
     }
 
-    /**
-     * Processes user search request results.
-     * See {@link org.lastrix.collagemaker.app.RequestActivity.UserSearchRequest} .
-     */
-    private static class UserSearchSubscriber extends Subscriber<User> {
-        private final RequestActivity mActivity;
+    @Override
+    public void onUserSelected(User user) {
+        //forbid abusing
+        if (mSelectedUser == user) return;
 
-        private UserSearchSubscriber(RequestActivity context) {
-            this.mActivity = context;
-        }
-
-        @Override
-        public void onCompleted() {
-            if (LOG_ALL) {
-                Log.d(LOG_TAG, "User check completed!");
-            }
-            // make state clean
-            cleanup();
-
-            //now we may decide what to do with results
-            final int size = mActivity.mUsersFound.size();
-            if (size == 0) {
-                noResult();
-            } else if (size == 1) {
-                singleResult();
-            } else {
-                multipleResult();
-            }
-        }
-
-        private void multipleResult() {
-            if (LOG_ALL) {
-                Log.v(LOG_TAG, "Starting activity to select user from returned list.");
-            }
-            //start new user pick activity
-            //TODO: add user picker activity instead of error toast.
-            Toast.makeText(mActivity, R.string.error_user_selection_not_implemented, Toast.LENGTH_LONG).show();
-        }
-
-        private void noResult() {
-            if (LOG_ALL) {
-                Log.i(LOG_TAG, "No users found!");
-            }
-            //just notify user about such sad results.
-            Toast.makeText(mActivity, R.string.error_no_user_found, Toast.LENGTH_LONG).show();
-        }
-
-        private void singleResult() {
-            //do image fetch
-            if (LOG_ALL) {
-                Log.v(LOG_TAG, "User found, starting photo picker.");
-            }
-            //launch PhotoPickerActivity
-            final Bundle bundle = mActivity.mUsersFound.get(0).asBundle();
-            final Intent intent = new Intent(mActivity, CollageActivity.class);
-            intent.putExtras(bundle);
-            mActivity.startActivity(intent);
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            if (LOG_ALL) {
-                Log.d(LOG_TAG, "Failed to check user.", e);
-            }
-
-            //anyway cleanup our state.
-            cleanup();
-            //and make user know about our problems
-            Toast.makeText(mActivity, R.string.error_user_check_failed, Toast.LENGTH_LONG).show();
-        }
-
-        private void cleanup() {
-            mActivity.mProgressDialog.dismiss();
-
-            mActivity.mSubscription.unsubscribe();
-            mActivity.mSubscription = null;
-
-            mActivity.mBtnCollage.setEnabled(true);
-        }
-
-        @Override
-        public void onNext(User user) {
-            mActivity.mUsersFound.add(user);
-        }
-    }
-
-    /**
-     * Observable for user searching
-     * <p/>
-     * Created by lastrix on 8/21/14.
-     */
-    static class UserSearchRequest implements Observable.OnSubscribe<User> {
-
-        private final String mUsername;
-
-        public UserSearchRequest(String username) {
-            mUsername = username;
-        }
-
-        @Override
-        public void call(Subscriber<? super User> subscriber) {
-            try {
-                for (User u : InstagramApi.search(mUsername)) {
-                    if (subscriber.isUnsubscribed()) return;
-                    subscriber.onNext(u);
-                }
-                if (!subscriber.isUnsubscribed()) {
-                    subscriber.onCompleted();
-                }
-            } catch (InstagramApiException e) {
-                if (!subscriber.isUnsubscribed()) {
-                    subscriber.onError(e);
-                }
-            }
+        mSelectedUser = user;
+        if (mTwoPane) {
+            //simply replace old one
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.user_photos, UserPhotosFragment.newInstance(user))
+                    .commit();
+        } else {
+            //start intent
+            Intent intent = new Intent(this, UserPhotosActivity.class);
+            intent.putExtras(user.asBundle());
+            startActivity(intent);
         }
     }
 }

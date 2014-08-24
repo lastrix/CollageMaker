@@ -9,7 +9,7 @@
     <ListView
             android:layout_width="256dp"
             android:layout_height="match_parent"
-            android:id="@+id/photos"
+            android:id="@+id/grid_view_photos"
             android:choiceMode="multipleChoice"
             android:layout_weight="0.25"
             android:background="@drawable/abc_ab_solid_light_holo"/>

@@ -1,19 +1,12 @@
 package org.lastrix.collagemaker.app;
 
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.net.Uri;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageView;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-
-import java.io.File;
 
 
 public class PreviewActivity extends ActionBarActivity {
@@ -31,13 +24,13 @@ public class PreviewActivity extends ActionBarActivity {
 
         Bundle bundle = getIntent().getExtras();
         mUri = bundle.getString(FILE_URL);
-        if ( mUri == null ){
+        if (mUri == null) {
             finish();
         } else {
             mImageView = (ImageView) findViewById(R.id.preview);
             mImageView.setImageBitmap(ImageLoader.getInstance().getMemoryCache().get(mUri));
         }
-        if ( LOG_ALL) {
+        if (LOG_ALL) {
             Log.v(LOG_TAG, "onCreate()");
         }
     }
@@ -76,7 +69,7 @@ public class PreviewActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if ( LOG_ALL) {
+        if (LOG_ALL) {
             Log.v(LOG_TAG, "onResume()");
         }
     }
