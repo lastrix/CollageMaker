@@ -37,8 +37,9 @@ import java.util.List;
  */
 public class CollageActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, GFXSurfaceView.ScreenShotListener {
     public static final String LOG_TAG = CollageActivity.class.getSimpleName();
-    private static final boolean LOG_ALL = false;
+    private static final boolean LOG_ALL = true;
     public static final float ZOOM_STEP = 0.5f;
+    public static final String URI_SCREEN_SHOT = "content://lastrix.org/bmp/screen.bmp";
     private User mUser;
     private Subscription mIndexSubscription = null;
     private Subscription mSaveSubscription = null;
@@ -221,7 +222,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
                                 Intent intent = new Intent(
                                         CollageActivity.this,
                                         PreviewActivity.class);
-                                intent.putExtra(PreviewActivity.FILE_URL, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), "screen")).toString());
+                                intent.putExtra(PreviewActivity.FILE_URL, URI_SCREEN_SHOT);
                                 startActivity(intent);
                                 mSaveSubscription.unsubscribe();
                                 mSaveSubscription = null;
@@ -454,24 +455,9 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
 
         @Override
         public void call(Subscriber<? super Object> subscriber) {
-            File f = new File(Environment.getExternalStorageDirectory(), "screen");
-            FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(f);
-                mBmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                fos.flush();
-                fos.close();
-                if ( !subscriber.isUnsubscribed() ){
-                    subscriber.onCompleted();
-                }
-            } catch (FileNotFoundException e) {
-                if ( !subscriber.isUnsubscribed() ){
-                    subscriber.onError(e);
-                }
-            } catch (IOException e) {
-                if ( !subscriber.isUnsubscribed() ){
-                    subscriber.onError(e);
-                }
+            ImageLoader.getInstance().getMemoryCache().put(URI_SCREEN_SHOT, mBmp);
+            if ( !subscriber.isUnsubscribed() ){
+                subscriber.onCompleted();
             }
         }
     }
