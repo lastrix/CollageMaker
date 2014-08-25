@@ -17,9 +17,9 @@ import org.lastrix.collagemaker.app.api.UserSearchTask;
  * Main activity. Performs user searching and navigation
  * to image selection activity {@link CollageActivity}.
  */
-public class RequestActivity extends ActionBarActivity implements UserListFragment.Listener {
+public class UserListActivity extends ActionBarActivity implements UserListFragment.Listener {
 
-    public static final String LOG_TAG = RequestActivity.class.getSimpleName();
+    public static final String LOG_TAG = UserListActivity.class.getSimpleName();
     private final static boolean LOG_ALL = BuildConfig.LOG_ALL;
 
     private UserListFragment mUserListFragment;
