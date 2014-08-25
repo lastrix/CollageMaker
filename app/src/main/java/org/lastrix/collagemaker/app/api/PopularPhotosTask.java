@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,30 +17,47 @@ import org.lastrix.collagemaker.app.content.Photo;
 import org.lastrix.collagemaker.app.content.User;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * Retrieves and stores popular photos index in database.<br/>
+ * Returns list of retrieved photos to listener {@link org.lastrix.collagemaker.app.api.PopularPhotosTask.Listener}.<br/>
+ * Index fetching is limited to {@link #PAGES_LIMIT} pages, which should be 5, since max requests per node is 15.
+ * It's not wise to increase this value anymore. 5 pages should be almost 150 photos.<br/>
+ * <br/>
+ * More about storing info in database here {@link org.lastrix.collagemaker.app.content.Photo}
+ * and here {@link org.lastrix.collagemaker.app.content.ContentProvider} .
+ * <p/>
  * Created by lastrix on 8/25/14.
  */
 public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implements DialogInterface.OnCancelListener {
-    public static final String LOG_TAG = PopularPhotosTask.class.getSimpleName();
-    public static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert photos to database";
-    public static final String LOG_MESSAGE_FAILED_DATABASE = "Failed to load data from database";
-    public static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+    private static final int PAGES_LIMIT = 5;
 
-    private volatile boolean mCanceled = false;
+    private static final String LOG_TAG = PopularPhotosTask.class.getSimpleName();
+    private static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert photos to database";
+    private static final String LOG_MESSAGE_FAILED_DATABASE = "Failed to load data from database";
+    private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+
+    private volatile boolean mCanceled;
     private ProgressDialog mProgressDialog;
     private Listener mListener;
     private Throwable mError;
     private ContentResolver mContentResolver;
 
-    public PopularPhotosTask(Listener mListener, ProgressDialog mProgressDialog, ContentResolver contentResolver) {
-        this.mListener = mListener;
-        this.mProgressDialog = mProgressDialog;
-        this.mContentResolver = contentResolver;
+    /**
+     * Create task for fetching popular photos
+     *
+     * @param listener        -- event listener
+     * @param progressDialog  -- progress dialog to display process
+     * @param contentResolver -- content resolver for data saving
+     */
+    public PopularPhotosTask(@NonNull Listener listener, @NonNull ProgressDialog progressDialog, @NonNull ContentResolver contentResolver) {
+        this.mListener = listener;
+        this.mProgressDialog = progressDialog;
         this.mProgressDialog.setOnCancelListener(this);
+        this.mContentResolver = contentResolver;
+        this.mCanceled = false;
     }
 
 
@@ -55,7 +73,10 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         if (mCanceled) {
             return;
         }
-        mProgressDialog.dismiss();
+
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
 
         if (photos == null) {
             mListener.onLoadingFailed(mError);
@@ -73,8 +94,13 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     @Override
     protected void onCancelled() {
         super.onCancelled();
+        if (mCanceled) {
+            return;
+        }
         mCanceled = true;
-        mProgressDialog.dismiss();
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
         mProgressDialog.setOnCancelListener(null);
         mProgressDialog = null;
         mListener = null;
@@ -85,23 +111,26 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     protected List<Photo> doInBackground(User... params) {
         List<Photo> photos = new LinkedList<Photo>();
         List<Photo> userPhotos = new LinkedList<Photo>();
+        int pages;
         for (User user : params) {
             try {
                 if (mCanceled) return null;
 
                 //check local cache, abusing server is not good idea
-                if (fetchFromDatabase(photos, user)) {
+                if (get(photos, user)) {
                     continue;
                 }
                 //start fetching from server
+                pages = 0;
                 String next = API.getApiPopularPhotosUrl(user);
-                while (next != null) {
+                while (next != null && pages < PAGES_LIMIT) {
                     if (mCanceled) return null;
                     next = fetch(next, userPhotos, user);
+                    pages++;
                 }
 
                 //store to database
-                photos.addAll(saveToDatabase(userPhotos, user));
+                photos.addAll(persist(userPhotos, user));
 
                 userPhotos.clear();
             } catch (ApiException e) {
@@ -115,7 +144,14 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         return photos;
     }
 
-    private Collection<? extends Photo> saveToDatabase(List<Photo> userPhotos, User user) {
+    /**
+     * Store photos in database, returns valid objects with valid id fields.
+     *
+     * @param userPhotos -- photos to save
+     * @param user       -- photos owner
+     * @return list of persisted photos or supplied list of persist failed for some reason.
+     */
+    private List<Photo> persist(@NonNull List<Photo> userPhotos, @NonNull User user) {
         int size = userPhotos.size();
         ContentValues[] values = new ContentValues[size];
         int idx = 0;
@@ -131,7 +167,7 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
 
         //create new collection with mId field set
         List<Photo> resultSet = new ArrayList<Photo>(size);
-        if (fetchFromDatabase(resultSet, user)) {
+        if (get(resultSet, user)) {
             return resultSet;
         }
 
@@ -141,7 +177,14 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         return userPhotos;
     }
 
-    private boolean fetchFromDatabase(List<Photo> userPhotos, User user) {
+    /**
+     * Return list of photos for user
+     *
+     * @param userPhotos -- where to store photos
+     * @param user       -- the photos owner
+     * @return true of data loaded, false otherwise
+     */
+    private boolean get(@NonNull List<Photo> userPhotos, @NonNull User user) {
         final Cursor cursor = mContentResolver.query(
                 ContentHelper.getPhotoUri(null),
                 null,
@@ -166,26 +209,31 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         return true;
     }
 
-    private String fetch(String next, List<Photo> photos, User user) throws ApiException, JSONException {
+    /**
+     * Fetch paged data from instagram server
+     *
+     * @param next   -- the api call url
+     * @param photos -- where results should be stored
+     * @param user   -- photos owner
+     * @return api call url for next page
+     * @throws ApiException
+     * @throws JSONException
+     */
+    private String fetch(String next, @NonNull List<Photo> photos, @NonNull User user) throws ApiException, JSONException {
         //do api call
         JSONObject root = API.apiCall(next);
 
         //process data
         JSONArray data = root.getJSONArray(API.JSON_DATA);
         final int size = data.length();
-        JSONObject object, images;
+        JSONObject object;
         for (int i = 0; i < size; i++) {
             object = data.getJSONObject(i);
-            images = object.getJSONObject(API.JSON_DATA_IMAGES);
 
             if (!API.isImage(object)) continue;
 
             //create photo
-            photos.add(new Photo(user,
-                    API.getImageUrl(images, API.JSON_DATA_IMAGES_THUMBNAIL),
-                    API.getImageUrl(images, API.JSON_DATA_IMAGES_STANDARD_RESOLUTION),
-                    API.getLikes(object)
-            ));
+            photos.add(Photo.fromJson(user, object));
         }
         //well done!
         return API.nextUrl(root);
@@ -197,10 +245,23 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         onCancelled();
     }
 
+    /**
+     * Listener for result processing of this task
+     */
     public interface Listener {
 
+        /**
+         * Called when photos was correctly loaded
+         *
+         * @param photos -- loaded photos
+         */
         void onLoadingCompleted(List<Photo> photos);
 
+        /**
+         * Called when an error occurred during task processing
+         *
+         * @param e -- raised exception
+         */
         void onLoadingFailed(Throwable e);
     }
 }

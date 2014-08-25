@@ -6,45 +6,58 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lastrix.collagemaker.app.BuildConfig;
 import org.lastrix.collagemaker.app.content.ContentHelper;
-import org.lastrix.collagemaker.app.content.Photo;
 import org.lastrix.collagemaker.app.content.User;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * Searches database or calls instagram api server for list of users matching pattern.</br>
+ * Stores users in database to reduce amount of api calls.
+ * More about storing here {@link org.lastrix.collagemaker.app.content.User} and
+ * here {@link org.lastrix.collagemaker.app.content.ContentProvider} .
  * Created by lastrix on 8/25/14.
  */
 public class UserSearchTask extends AsyncTask<String, Void, List<User>> implements DialogInterface.OnCancelListener {
 
-    public static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert users to database";
-    public static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+    /**
+     * Sentinel object to allow fetching cached users list.
+     */
+    public static final String SENTINEL = "...***SENTINEL***...";
+    private static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert users to database";
+    private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
     private static final String LOG_TAG = UserSearchTask.class.getSimpleName();
-    private volatile boolean mCanceled = false;
+    private volatile boolean mCanceled;
     private ProgressDialog mProgressDialog;
     private Listener mListener;
     private Throwable mError;
     private ContentResolver mContentResolver;
 
-    public UserSearchTask(Listener mListener, ProgressDialog mProgressDialog, ContentResolver contentResolver) {
-        this.mListener = mListener;
-        this.mProgressDialog = mProgressDialog;
-        mContentResolver = contentResolver;
-        mProgressDialog.setOnCancelListener(this);
+    public UserSearchTask(Listener listener, ProgressDialog progressDialog, ContentResolver contentResolver) {
+        this.mListener = listener;
+        this.mProgressDialog = progressDialog;
+        this.mProgressDialog.setOnCancelListener(this);
+        this.mContentResolver = contentResolver;
+        this.mCanceled = false;
     }
 
     @Override
     protected void onCancelled() {
         super.onCancelled();
+        if (mCanceled) {
+            return;
+        }
         mCanceled = true;
-        mProgressDialog.dismiss();
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
         mProgressDialog.setOnCancelListener(null);
         mProgressDialog = null;
         mListener = null;
@@ -57,7 +70,10 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         if (mCanceled) {
             return;
         }
-        mProgressDialog.dismiss();
+
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
 
         if (users == null) {
             mListener.onSearchFailed(mError);
@@ -83,18 +99,22 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         List<User> list = new LinkedList<User>();
         try {
             for (String username : params) {
-                if (fetchFromDatabase(users, username)) {
+                //check database first
+                if (get(users, username)) {
                     continue;
                 }
 
+                //do api calls
                 String next = API.getApiUserSearchUrl(username);
                 while (next != null) {
                     if (mCanceled) return null;
                     next = fetch(next, list);
                 }
 
-                users.addAll(saveToDatabase(list, username));
+                //cache found users
+                users.addAll(persist(list));
 
+                //clear local cache
                 list.clear();
             }
         } catch (ApiException e) {
@@ -107,11 +127,18 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         return users;
     }
 
-    private Collection<? extends User> saveToDatabase(List<User> list, String username) {
-        int size = list.size();
+    /**
+     * Store users in database.<br/>
+     * This method returns passed argument if saving failed for some reason.
+     *
+     * @param users -- list of users
+     * @return list of persisted users
+     */
+    private List<User> persist(@NonNull List<User> users) {
+        int size = users.size();
         ContentValues[] values = new ContentValues[size];
         int idx = 0;
-        for (User user : list) {
+        for (User user : users) {
             values[idx++] = user.asContentValues();
         }
 
@@ -122,21 +149,40 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         }
 
         //ids are same, so it's safe to use this objects.
-        return list;
+        return users;
     }
 
-    private boolean fetchFromDatabase(List<User> users, String username) {
-        final Cursor cursor = mContentResolver.query(
-                ContentHelper.getUserUri(null),
-                null,
-                String.format("%s LIKE ?", User.COLUMN_NICK),
-                new String[]{username + "%"},
-                Photo.COLUMN_ID);
+    /**
+     * Get data from database
+     *
+     * @param users    -- where users should be stored
+     * @param username -- username to search
+     * @return true if data loaded, false otherwise
+     */
+    private boolean get(List<User> users, String username) {
+        final Cursor cursor;
+        boolean defaultResult = false;
+        if (SENTINEL.equals(username)) {
+            defaultResult = true;
+            cursor = mContentResolver.query(
+                    ContentHelper.getUserUri(null),
+                    null,
+                    null,
+                    null,
+                    User.DEFAULT_SORT);
+        } else {
+            cursor = mContentResolver.query(
+                    ContentHelper.getUserUri(null),
+                    null,
+                    User.DEFAULT_SEARCH_WHERE,
+                    new String[]{"%" + username + "%"},
+                    User.DEFAULT_SORT);
+        }
 
         //if nothing found - just return false
         if (cursor == null || cursor.getCount() == 0) {
             if (cursor != null) cursor.close();
-            return false;
+            return defaultResult;
         }
 
         // convert data to internal objects
@@ -179,10 +225,23 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         onCancelled();
     }
 
+    /**
+     * Listener which should receive task results
+     */
     public interface Listener {
 
+        /**
+         * Called when search successfully completed
+         *
+         * @param users -- list of found users
+         */
         void onSearchCompleted(List<User> users);
 
+        /**
+         * Called when search failed due to exception
+         *
+         * @param e -- raised exception
+         */
         void onSearchFailed(Throwable e);
     }
 }

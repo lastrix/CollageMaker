@@ -32,7 +32,7 @@
         </activity>
 
         <provider
-            android:name="org.lastrix.collagemaker.app.content.CollageContentProvider"
+            android:name=".content.ContentProvider"
             android:authorities="org.lastrix.collagemaker.app.content"
             android:enabled="true"
             android:exported="false" >

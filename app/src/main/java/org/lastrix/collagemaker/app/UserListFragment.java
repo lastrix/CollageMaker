@@ -2,6 +2,10 @@ package org.lastrix.collagemaker.app;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentProvider;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,12 +16,11 @@ import android.view.ViewGroup;
 import android.widget.*;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import org.lastrix.collagemaker.app.api.UserSearchTask;
+import org.lastrix.collagemaker.app.content.ContentHelper;
 import org.lastrix.collagemaker.app.content.User;
 
 import java.util.Collections;
 import java.util.List;
-
-import static android.support.v7.widget.SearchView.OnQueryTextListener;
 
 
 /**
@@ -29,16 +32,25 @@ import static android.support.v7.widget.SearchView.OnQueryTextListener;
 public class UserListFragment extends Fragment implements AdapterView.OnItemClickListener, UserSearchTask.Listener {
     public final static boolean LOG_ALL = BuildConfig.LOG_ALL;
     public final static String LOG_TAG = UserListFragment.class.getSimpleName();
-    public static final String CONFIG_LAST_SEARCHED = "lastSearched";
+    public static final String ARG_SEARCH = "search";
+    public static final String CONFIG_SELECTED = "selected";
+
 
     private Listener mListener;
     private UserListViewAdapter mAdapter;
     private ListView mListView;
-    private UserSearchOnQueryTextListener mQueryTextListener;
     private UserSearchTask mSearchTask;
     private ProgressDialog mProgressDialog;
-    private String mLastSearched = null;
+    private String mSearch;
+    private long mSelected = -1;
 
+    public static UserListFragment newInstance(String username){
+        UserListFragment fragment = new UserListFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(ARG_SEARCH, username!=null?username:UserSearchTask.SENTINEL);
+        fragment.setArguments(bundle);
+        return fragment;
+    }
 
     public UserListFragment() {
         // Required empty public constructor
@@ -48,10 +60,10 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mQueryTextListener = new UserSearchOnQueryTextListener(this);
+        mSearch = getArguments().getString(ARG_SEARCH);
 
-        if (savedInstanceState != null) {
-            mLastSearched = savedInstanceState.getString(CONFIG_LAST_SEARCHED);
+        if ( savedInstanceState != null ){
+            mSelected = savedInstanceState.getLong(CONFIG_SELECTED);
         }
     }
 
@@ -66,7 +78,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mListView = (ListView) view.findViewById(R.id.list);
-        mAdapter = new UserListViewAdapter(getActivity().getLayoutInflater());
+        mAdapter = new UserListViewAdapter(getActivity().getLayoutInflater(), getActivity().getContentResolver());
         mListView.setOnItemClickListener(this);
         mListView.setAdapter(mAdapter);
 
@@ -75,9 +87,8 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mProgressDialog.setTitle(R.string.title_loading);
         mProgressDialog.setCancelable(true);
 
-        if (mLastSearched != null) {
-            searchFor(mLastSearched);
-        }
+        mSearchTask = new UserSearchTask(this, mProgressDialog, getActivity().getContentResolver());
+        mSearchTask.execute(mSearch);
     }
 
     @Override
@@ -106,8 +117,6 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mListView = null;
         mAdapter = null;
         mProgressDialog = null;
-        mQueryTextListener.mFragment = null;
-        mQueryTextListener = null;
     }
 
     @Override
@@ -118,26 +127,40 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        mListener.onUserSelected((User) mAdapter.getItem(position));
+        User user = (User) mAdapter.getItem(position);
+        mListener.onUserSelected(user);
+        mSelected = user.getId();
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (mLastSearched != null) {
-            outState.putString(CONFIG_LAST_SEARCHED, mLastSearched);
+        if (mSelected != -1) {
+            outState.putLong(CONFIG_SELECTED, mSelected);
         }
     }
 
-    OnQueryTextListener getQueryTextListener() {
-        return mQueryTextListener;
-    }
 
     @Override
-    public void onSearchCompleted(List<User> users) {
+    public void onSearchCompleted(final List<User> users) {
         mAdapter.mUsers = users;
         mAdapter.notifyDataSetChanged();
         mSearchTask = null;
+        mListView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mSelected != -1) {
+                    final int size = mAdapter.mUsers.size();
+                    for (int i = 0; i < size; i++) {
+                        if (mAdapter.mUsers.get(i).getId() == mSelected) {
+                            mListView.setSelection(i);
+                            mListView.smoothScrollToPosition(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }, 100L);
     }
 
     @Override
@@ -145,16 +168,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         Log.e(LOG_TAG, "Failed to check user.", e);
         Toast.makeText(getActivity(), R.string.error_user_check_failed, Toast.LENGTH_LONG).show();
         mSearchTask = null;
-    }
-
-    private void searchFor(String s) {
-        if (mSearchTask != null) {
-            mSearchTask.cancel(true);
-            mSearchTask = null;
-        }
-        mSearchTask = new UserSearchTask(this, mProgressDialog, getActivity().getContentResolver());
-        mSearchTask.execute(s);
-        mLastSearched = s;
+        mSelected = -1;
     }
 
 
@@ -163,34 +177,16 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         public void onUserSelected(User user);
     }
 
-    private static class UserSearchOnQueryTextListener implements OnQueryTextListener {
-        private UserListFragment mFragment;
-
-        public UserSearchOnQueryTextListener(UserListFragment fragment) {
-            mFragment = fragment;
-        }
-
-        @Override
-        public boolean onQueryTextSubmit(String s) {
-            mFragment.searchFor(s);
-            return true;
-        }
-
-        @Override
-        public boolean onQueryTextChange(String s) {
-            if (LOG_ALL) {
-                Log.v(LOG_TAG, "onQueryTextChange: " + s);
-            }
-            return false;
-        }
-    }
-
-
-    private static class UserListViewAdapter extends BaseAdapter {
+    private static class UserListViewAdapter extends BaseAdapter implements View.OnClickListener {
+        public static final int VIEW_TYPE_COUNT = 2;
+        public static final int VIEW_TYPE_EMPTY = 1;
+        public static final int VIEW_TYPE_ITEM = 0;
         private final LayoutInflater mInflater;
         private List<User> mUsers;
+        private ContentResolver mContentResolver;
 
-        private UserListViewAdapter(LayoutInflater inflater) {
+        private UserListViewAdapter(LayoutInflater inflater, ContentResolver contentResolver) {
+            mContentResolver = contentResolver;
             mUsers = Collections.emptyList();
             this.mInflater = inflater;
         }
@@ -214,39 +210,8 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            if (getItemViewType(position) == 0) {
-                ViewHolder holder;
-                if (convertView == null) {
-                    convertView = mInflater.inflate(R.layout.list_item_user, null);
-                    holder = new ViewHolder();
-                    holder.photo = (ImageView) convertView.findViewById(R.id.photo);
-                    holder.name = (TextView) convertView.findViewById(R.id.name);
-                    holder.nick = (TextView) convertView.findViewById(R.id.nick);
-                    holder.position = position;
-                    holder.loaded = false;
-                    convertView.setTag(holder);
-                } else {
-                    holder = (ViewHolder) convertView.getTag();
-                }
-                User user = mUsers.get(position);
-                if (holder.position != position || !user.getPhotoUrl().equals(holder.url)) {
-                    holder.loaded = false;
-                }
-                holder.position = position;
-
-                //if data changed
-                if (!holder.loaded) {
-                    holder.loaded = true;
-
-                    holder.name.setText(user.getName());
-                    holder.nick.setText(user.getUsername());
-
-                    //now load image
-                    holder.url = user.getPhotoUrl();
-                    ImageLoader loader = ImageLoader.getInstance();
-                    loader.cancelDisplayTask(holder.photo);
-                    loader.displayImage(holder.url, holder.photo);
-                }
+            if (getItemViewType(position) == VIEW_TYPE_ITEM) {
+                convertView = getItemView(position, convertView);
             } else {
                 //no results found
                 convertView = mInflater.inflate(android.R.layout.simple_list_item_1, null);
@@ -256,15 +221,69 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             return convertView;
         }
 
+        private View getItemView(int position, View convertView) {
+            final ViewHolder holder;
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.list_item_user, null);
+
+                holder = new ViewHolder();
+                holder.photo = (ImageView) convertView.findViewById(R.id.photo);
+                holder.name = (TextView) convertView.findViewById(R.id.name);
+                holder.nick = (TextView) convertView.findViewById(R.id.nick);
+                holder.favorite = (ImageView) convertView.findViewById(R.id.favorite);
+                holder.favorite.setOnClickListener(this);
+                holder.position = position;
+                holder.loaded = false;
+
+                convertView.setTag(holder);
+
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+
+            }
+
+            //check state
+            User user = mUsers.get(position);
+            if (holder.position != position || user != holder.user) {
+                holder.loaded = false;
+            }
+
+            //if data changed
+            if (!holder.loaded) {
+                holder.loaded = true;
+
+                holder.position = position;
+                holder.user = user;
+                holder.photo.setImageResource(android.R.drawable.ic_menu_report_image);
+                holder.name.setText(user.getName());
+                holder.nick.setText(user.getUsername());
+
+                holder.favorite.setTag(position);
+                if ( holder.user.isFavorite() ) {
+                    holder.favorite.setImageResource(android.R.drawable.btn_star_big_on);
+                } else {
+                    holder.favorite.setImageResource(android.R.drawable.btn_star_big_off);
+                }
+
+                //now load image
+                holder.url = user.getPhotoUrl();
+                ImageLoader loader = ImageLoader.getInstance();
+                loader.cancelDisplayTask(holder.photo);
+                loader.displayImage(holder.url, holder.photo);
+
+            }
+            return convertView;
+        }
+
         @Override
         public int getItemViewType(int position) {
-            if (mUsers.size() == 0) return 1;
-            return 0;
+            if (mUsers.size() == 0) return VIEW_TYPE_EMPTY;
+            return VIEW_TYPE_ITEM;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 2;
+            return VIEW_TYPE_COUNT;
         }
 
         @Override
@@ -272,13 +291,54 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             return mUsers.size() > 0;
         }
 
+        @Override
+        public void onClick(View v) {
+            ImageView image = (ImageView) v;
+            Integer position = (Integer) v.getTag();
+            User user = mUsers.get(position);
+            user.setFavorite(!user.isFavorite());
+            if ( user.isFavorite() ) {
+                image.setImageResource(android.R.drawable.btn_star_big_on);
+            } else {
+                image.setImageResource(android.R.drawable.btn_star_big_off);
+            }
+            new FavoriteChangeTask(mContentResolver).execute(user);
+        }
+
         private static class ViewHolder {
             int position;
             boolean loaded;
+            User user;
             String url;
             ImageView photo;
             TextView name;
             TextView nick;
+            ImageView favorite;
         }
+
+        private static class FavoriteChangeTask extends AsyncTask<User, Void, Void>{
+
+            private ContentResolver mContentResolver;
+
+            private FavoriteChangeTask(ContentResolver contentResolver) {
+                this.mContentResolver = contentResolver;
+            }
+
+            @Override
+            protected Void doInBackground(User... params) {
+                ContentValues values = new ContentValues(1);
+                for( User user : params){
+                    values.clear();
+                    values.put(User.COLUMN_FAVORITE, user.isFavorite());
+                    mContentResolver.update(ContentHelper.getUserUri(user),
+                            values,
+                            String.format("%s = ?", User.COLUMN_ID),
+                            new String[]{Long.toString(user.getId())}
+                    );
+                }
+                return null;
+            }
+        }
+
     }
 }

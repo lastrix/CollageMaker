@@ -4,12 +4,13 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import org.lastrix.collagemaker.app.api.UserSearchTask;
 import org.lastrix.collagemaker.app.content.User;
 
 
@@ -22,38 +23,34 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
     public static final String LOG_TAG = UserListActivity.class.getSimpleName();
     private final static boolean LOG_ALL = BuildConfig.LOG_ALL;
 
-    private UserListFragment mUserListFragment;
     private boolean mTwoPane = false;
-    private User mSelectedUser = null;
-    private UserSearchTask mSearchTask;
+    private UserSearchOnQueryTextListener mQueryListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_users_list);
 
+        mQueryListener = new UserSearchOnQueryTextListener(this);
 
-        mUserListFragment = (UserListFragment) getSupportFragmentManager().findFragmentById(R.id.user_list);
+        FragmentManager manager = getSupportFragmentManager();
+        if (savedInstanceState == null) {
+
+            manager.beginTransaction()
+                    .add(R.id.fragment_container_user_list, UserListFragment.newInstance(null))
+                    .commit();
+
+        }
 
         if (findViewById(R.id.fragment_container) != null) {
             //install photos fragment
             mTwoPane = true;
 
             if (savedInstanceState == null) {
-                getSupportFragmentManager().beginTransaction()
+                manager.beginTransaction()
                         .add(R.id.fragment_container, UserPhotosFragment.newInstance(null))
                         .commit();
             }
-        }
-    }
-
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mSearchTask != null) {
-            mSearchTask.cancel(true);
-            mSearchTask = null;
         }
     }
 
@@ -65,7 +62,7 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
 
         final SearchView searchText = getSearchView(menu);
         searchText.setQueryHint(getString(R.string.hint_search_user));
-        searchText.setOnQueryTextListener(mUserListFragment.getQueryTextListener());
+        searchText.setOnQueryTextListener(mQueryListener);
 
         return true;
     }
@@ -95,16 +92,13 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
 
     @Override
     protected void onDestroy() {
-        this.mUserListFragment = null;
+        mQueryListener.mActivity = null;
+        mQueryListener = null;
         super.onDestroy();
     }
 
     @Override
     public void onUserSelected(User user) {
-        //forbid abusing
-        if (mSelectedUser == user) return;
-
-        mSelectedUser = user;
         if (mTwoPane) {
             //simply replace old one
             getSupportFragmentManager().beginTransaction()
@@ -117,4 +111,34 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
             startActivity(intent);
         }
     }
+
+    private void searchFor(String username) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container_user_list, UserListFragment.newInstance(username))
+                .commit();
+    }
+
+    private static class UserSearchOnQueryTextListener implements SearchView.OnQueryTextListener {
+        private UserListActivity mActivity;
+
+        public UserSearchOnQueryTextListener(UserListActivity activity) {
+            mActivity = activity;
+        }
+
+        @Override
+        public boolean onQueryTextSubmit(String s) {
+            mActivity.searchFor(s);
+            return true;
+        }
+
+        @Override
+        public boolean onQueryTextChange(String s) {
+            if (LOG_ALL) {
+                Log.v(LOG_TAG, "onQueryTextChange: " + s);
+            }
+            return false;
+        }
+    }
+
+
 }

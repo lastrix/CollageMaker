@@ -1,6 +1,5 @@
 package org.lastrix.collagemaker.app.content;
 
-import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -10,27 +9,49 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import org.lastrix.collagemaker.app.BuildConfig;
 
-public class CollageContentProvider extends ContentProvider {
+import java.util.Arrays;
 
-    public static final String AUTHORITY = "org.lastrix.collagemaker.app.content";
-    public static final String LOG_MESSAGE_FAILED_SQL = "Failed to execute sql";
-    public static final String LOG_TAG = CollageContentProvider.class.getSimpleName();
+/**
+ * ContentProvider used for caching api calls results.<br/>
+ * This is required because of strict limits on number of api calls per hour
+ * and per node.<br/>
+ * NOTICE:<br/>
+ * This content provider does not provide per item insert or delete.<br/>
+ * You may call {@link #call(String, String, android.os.Bundle)}
+ * with method {@link #CALL_FLUSH} to remove obsolete entries.</br>
+ * ContentProvider will automatically flush obsolete data at {@link #onCreate()} .
+ */
+public class ContentProvider extends android.content.ContentProvider {
+
+    private static final String LOG_MESSAGE_FAILED_SQL = "Failed to execute sql";
+    private static final String LOG_MESSAGE_CALLING_INSERT = "Calling inserting single record is not advisable.";
+    private static final String LOG_TAG = ContentProvider.class.getSimpleName();
+    private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+
+
     public static final String CALL_FLUSH = "flush";
     public static final String CALL_FLUSH_RESULT = "RESULT";
+    public static final String AUTHORITY = "org.lastrix.collagemaker.app.content";
     private static final UriMatcher sUriMatcher;
     private static final int CODE_USER = 1;
     private static final int CODE_PHOTO = 2;
     private static final int CODE_PHOTO_UPDATE = 3;
+    private static final int CODE_USER_UPDATE = 4;
+
     static {
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         sUriMatcher.addURI(AUTHORITY, User.TABLE_NAME, CODE_USER);
         sUriMatcher.addURI(AUTHORITY, Photo.TABLE_NAME, CODE_PHOTO);
         sUriMatcher.addURI(AUTHORITY, Photo.TABLE_NAME + "/#", CODE_PHOTO_UPDATE);
+        sUriMatcher.addURI(AUTHORITY, User.TABLE_NAME + "/#", CODE_USER_UPDATE);
     }
+
+
     private DatabaseHelper mDatabaseHelper;
 
-    public CollageContentProvider() {
+    public ContentProvider() {
     }
 
     @Override
@@ -71,6 +92,7 @@ public class CollageContentProvider extends ContentProvider {
         SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
         //this method is not supposed to work with single entries.
         // you'd better you bulkInsert
+        Log.w(LOG_TAG, LOG_MESSAGE_CALLING_INSERT);
         switch (sUriMatcher.match(uri)) {
             case CODE_USER:
                 db.insert(User.TABLE_NAME, null, values);
@@ -88,6 +110,7 @@ public class CollageContentProvider extends ContentProvider {
     @Override
     public boolean onCreate() {
         mDatabaseHelper = new DatabaseHelper(getContext());
+        flush();
         return true;
     }
 
@@ -110,8 +133,20 @@ public class CollageContentProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection,
                       String[] selectionArgs) {
-        // TODO: Implement this to handle requests to update one or more rows.
-        throw new UnsupportedOperationException("Not yet implemented");
+        SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
+        if ( LOG_ALL ) {
+            Log.v(LOG_TAG, "Uri = " + uri.toString() + " contentValues=" + values + " selection=" + selection + " selectionArgs=" + Arrays.toString(selectionArgs));
+        }
+        switch (sUriMatcher.match(uri)) {
+            case CODE_USER_UPDATE:
+                return db.update(User.TABLE_NAME, values, selection, selectionArgs);
+
+            case CODE_PHOTO_UPDATE:
+                return db.update(Photo.TABLE_NAME, values, selection, selectionArgs);
+
+            default:
+                throw new UnsupportedOperationException(String.format("Incorrect uri [%s]", uri.toString()));
+        }
     }
 
     @Override
@@ -150,19 +185,23 @@ public class CollageContentProvider extends ContentProvider {
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
         if (CALL_FLUSH.equals(method)) {
-            SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
-            boolean failed = false;
-            try {
-                db.execSQL(Photo.SQL_FLUSH);
-                db.execSQL(User.SQL_FLUSH);
-            } catch (SQLException e) {
-                Log.e(LOG_TAG, LOG_MESSAGE_FAILED_SQL, e);
-                failed = true;
-            }
-            Bundle bundle = new Bundle();
-            bundle.putBoolean(CALL_FLUSH_RESULT, !failed);
-            return bundle;
+            return flush();
         }
         return null;
+    }
+
+    private Bundle flush() {
+        SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
+        boolean failed = false;
+        try {
+            db.execSQL(Photo.SQL_FLUSH);
+            db.execSQL(User.SQL_FLUSH);
+        } catch (SQLException e) {
+            Log.e(LOG_TAG, LOG_MESSAGE_FAILED_SQL, e);
+            failed = true;
+        }
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(CALL_FLUSH_RESULT, !failed);
+        return bundle;
     }
 }

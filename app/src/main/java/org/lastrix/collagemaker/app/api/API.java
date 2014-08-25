@@ -18,8 +18,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * Performs instagram api calls and processes it's results.
- * <p/>
+ * Performs instagram api calls and processes it's results.<br/>
+ * {@link #apiCall(String)}<br/>
+ * {@link #getApiPopularPhotosUrl(org.lastrix.collagemaker.app.content.User)}<br/>
+ * {@link #getApiUserSearchUrl(String)}<br/>
  * Created by lastrix on 8/21/14.
  */
 final class API {
@@ -28,8 +30,8 @@ final class API {
     public static final String API_USER_SEARCH = "https://api.instagram.com/v1/users/search?q=%s&client_id=%s";
     public static final String API_USER_S_POPULAR_PHOTOS = "https://api.instagram.com/v1/users/%d/media/recent/?client_id=%s";
 
-
     public static final HttpClient CLIENT = new DefaultHttpClient();
+    public static final int HTTP_OK = 200;
 
     public static final String JSON_META = "meta";
     public static final String JSON_META_ATTR_CODE = "code";
@@ -38,14 +40,7 @@ final class API {
     public static final String JSON_PAGINATION_NEXT_URL_ATTR = "next_url";
     public static final String JSON_PAGINATION = "pagination";
     public static final String JSON_DATA = "data";
-    public static final String JSON_DATA_IMAGES = "images";
-    public static final String JSON_DATA_IMAGES_THUMBNAIL = "thumbnail";
-    public static final String JSON_DATA_IMAGES_STANDARD_RESOLUTION = "standard_resolution";
     public static final String JSON_DATA_TYPE = "type";
-    public static final String JSON_DATA_LIKES = "likes";
-    public static final String JSON_DATA_LIKES_COUNT_ATTR = "count";
-    public static final String JSON_URL_ATTR = "url";
-
     public static final String DATA_TYPE_IMAGE = "image";
 
 
@@ -54,8 +49,6 @@ final class API {
     public static final String LOG_MESSAGE_RESPONSE_ERROR = "Code: %d;\ntype: %s;\nerror_message: %s";
     public static final String LOG_MESSAGE_NO_RESPONSE_FROM_SERVER = "No response from server.";
 
-
-    public static final int HTTP_OK = 200;
     public static final String LOG_TAG = API.class.getSimpleName();
     private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
 
@@ -129,7 +122,7 @@ final class API {
      * @return response body or null
      * @throws java.io.IOException in case of connection problems
      */
-    public static String get(String url) throws IOException {
+    private static String get(String url) throws IOException {
         StringBuilder builder = new StringBuilder();
         HttpGet get = new HttpGet(url);
 
@@ -147,16 +140,29 @@ final class API {
             }
             entity.consumeContent();
         } else {
+            Log.w(LOG_TAG, String.format("Server returned: %d", statusCode));
             //in case error code return null.
             return null;
         }
         return builder.toString();
     }
 
+    /**
+     * Get url for searching user
+     *
+     * @param username -- the username to be searched
+     * @return api call url
+     */
     public static String getApiUserSearchUrl(String username) {
         return String.format(API_USER_SEARCH, username, CLIENT_ID);
     }
 
+    /**
+     * Return url for fetching popular user photos
+     *
+     * @param user -- the user
+     * @return api call url
+     */
     public static String getApiPopularPhotosUrl(User user) {
         return String.format(API_USER_S_POPULAR_PHOTOS, user.getId(), CLIENT_ID);
     }
@@ -180,15 +186,15 @@ final class API {
         return null;
     }
 
-    public static String getImageUrl(JSONObject entry, String resolution) throws JSONException {
-        return entry.getJSONObject(resolution).getString(JSON_URL_ATTR);
-    }
-
+    /**
+     * Check whether data element is image entry
+     *
+     * @param entry -- json document
+     * @return true if image, false otherwise
+     * @throws JSONException
+     */
     public static boolean isImage(JSONObject entry) throws JSONException {
         return DATA_TYPE_IMAGE.equals(entry.getString(JSON_DATA_TYPE));
     }
 
-    public static int getLikes(JSONObject entry) throws JSONException {
-        return entry.getJSONObject(JSON_DATA_LIKES).getInt(JSON_DATA_LIKES_COUNT_ATTR);
-    }
 }

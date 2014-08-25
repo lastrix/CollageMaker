@@ -5,13 +5,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-    <fragment
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:name="org.lastrix.collagemaker.app.UserListFragment"
-            android:id="@+id/user_list"
-            android:layout_weight="@integer/activity_request_list_weight"
+    <FrameLayout
+            android:layout_width="match_parent"
             android:background="@drawable/abc_ab_stacked_transparent_light_holo"
-            android:layout_gravity="center_vertical"
-            tools:layout="@layout/fragment_user_list"/>
+            android:layout_height="match_parent"
+            android:id="@+id/fragment_container_user_list">
+    </FrameLayout>
 </LinearLayout>
