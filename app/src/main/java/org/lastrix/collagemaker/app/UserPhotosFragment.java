@@ -134,6 +134,9 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
             mGridView.removeCallbacks(mSetupRunnable);
             mSetupRunnable = null;
         }
+        if ( mProgressDialog.isShowing() ){
+            mProgressDialog.dismiss();
+        }
     }
 
     @Override

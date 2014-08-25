@@ -63,9 +63,11 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
 
 
     @Override
-    protected void onPreExecute() {
+    protected synchronized void onPreExecute() {
         super.onPreExecute();
-        mProgressDialog.show();
+        if ( !mCanceled ) {
+            mProgressDialog.show();
+        }
     }
 
     @Override

@@ -43,6 +43,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     private ProgressDialog mProgressDialog;
     private String mSearch;
     private long mSelected = -1;
+    private SetupRunnable mSetupRunnable;
 
     public static UserListFragment newInstance(String username){
         UserListFragment fragment = new UserListFragment();
@@ -109,6 +110,11 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             mSearchTask.cancel(true);
             mSearchTask = null;
         }
+        mListView.removeCallbacks(mSetupRunnable);
+        mSetupRunnable = null;
+        if ( mProgressDialog.isShowing() ){
+            mProgressDialog.dismiss();
+        }
     }
 
     @Override
@@ -146,21 +152,8 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mAdapter.mUsers = users;
         mAdapter.notifyDataSetChanged();
         mSearchTask = null;
-        mListView.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mSelected != -1) {
-                    final int size = mAdapter.mUsers.size();
-                    for (int i = 0; i < size; i++) {
-                        if (mAdapter.mUsers.get(i).getId() == mSelected) {
-                            mListView.setSelection(i);
-                            mListView.smoothScrollToPosition(i);
-                            break;
-                        }
-                    }
-                }
-            }
-        }, 100L);
+        mSetupRunnable = new SetupRunnable();
+        mListView.postDelayed(mSetupRunnable, 100L);
     }
 
     @Override
@@ -340,5 +333,21 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             }
         }
 
+    }
+
+    private class SetupRunnable implements Runnable {
+        @Override
+        public void run() {
+            if (mSelected != -1) {
+                final int size = mAdapter.mUsers.size();
+                for (int i = 0; i < size; i++) {
+                    if (mAdapter.mUsers.get(i).getId() == mSelected) {
+                        mListView.setSelection(i);
+                        mListView.smoothScrollToPosition(i);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

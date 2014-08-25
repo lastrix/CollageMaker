@@ -90,9 +90,11 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     }
 
     @Override
-    protected void onPreExecute() {
+    protected synchronized void onPreExecute() {
         super.onPreExecute();
-        mProgressDialog.show();
+        if ( !mCanceled) {
+            mProgressDialog.show();
+        }
     }
 
     @Override
