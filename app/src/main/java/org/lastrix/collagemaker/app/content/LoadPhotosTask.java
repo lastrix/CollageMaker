@@ -70,7 +70,7 @@ public class LoadPhotosTask extends AsyncTask<Void, Void, List<Photo>> {
     }
 
     @Override
-    protected void onPostExecute(List<Photo> photos) {
+    protected synchronized void onPostExecute(List<Photo> photos) {
         super.onPostExecute(photos);
         if (mCanceled) {
             return;
@@ -86,7 +86,7 @@ public class LoadPhotosTask extends AsyncTask<Void, Void, List<Photo>> {
     }
 
     @Override
-    protected void onCancelled() {
+    protected synchronized void onCancelled() {
         super.onCancelled();
         if (mCanceled) {
             return;

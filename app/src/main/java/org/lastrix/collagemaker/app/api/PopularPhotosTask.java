@@ -69,7 +69,7 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     }
 
     @Override
-    protected void onPostExecute(List<Photo> photos) {
+    protected synchronized void onPostExecute(List<Photo> photos) {
         super.onPostExecute(photos);
         if (mCanceled) {
             return;
@@ -85,7 +85,7 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     }
 
     @Override
-    protected void onCancelled() {
+    protected synchronized void onCancelled() {
         super.onCancelled();
         if (mCanceled) {
             return;
@@ -95,11 +95,13 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     }
 
     private void reset() {
-        if (mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
+        if ( mProgressDialog != null ) {
+            if (mProgressDialog.isShowing()) {
+                mProgressDialog.dismiss();
+            }
+            mProgressDialog.setOnCancelListener(null);
+            mProgressDialog = null;
         }
-        mProgressDialog.setOnCancelListener(null);
-        mProgressDialog = null;
         mListener = null;
         mContentResolver = null;
         mError = null;

@@ -51,7 +51,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     }
 
     @Override
-    protected void onCancelled() {
+    protected synchronized void onCancelled() {
         super.onCancelled();
         if (mCanceled) {
             return;
@@ -61,7 +61,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     }
 
     @Override
-    protected void onPostExecute(List<User> users) {
+    protected synchronized void onPostExecute(List<User> users) {
         super.onPostExecute(users);
         if (mCanceled) {
             return;
@@ -77,12 +77,14 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     }
 
     private void reset() {
-        if (mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
+        if ( mProgressDialog != null ) {
+            if (mProgressDialog.isShowing()) {
+                mProgressDialog.dismiss();
+            }
+            mProgressDialog.setOnCancelListener(null);
+            mProgressDialog = null;
         }
         mListener = null;
-        mProgressDialog.setOnCancelListener(null);
-        mProgressDialog = null;
         mError = null;
         mContentResolver = null;
     }

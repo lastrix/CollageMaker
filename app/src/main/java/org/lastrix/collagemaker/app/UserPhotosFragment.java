@@ -40,6 +40,7 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
     private PhotoListViewAdapter mAdapter;
     private PopularPhotosTask mPopularPhotosTask;
     private ProgressDialog mProgressDialog;
+    private SetupRunnable mSetupRunnable;
 
 
     public UserPhotosFragment() {
@@ -102,7 +103,6 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
             mPopularPhotosTask.cancel(true);
             mPopularPhotosTask = null;
         }
-
         mGridView.setOnItemClickListener(null);
         mGridView = null;
         mAdapter = null;
@@ -130,6 +130,10 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
             mPopularPhotosTask.cancel(true);
             mPopularPhotosTask = null;
         }
+        if ( mSetupRunnable != null ) {
+            mGridView.removeCallbacks(mSetupRunnable);
+            mSetupRunnable = null;
+        }
     }
 
     @Override
@@ -155,18 +159,8 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
         mPopularPhotosTask = null;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            mGridView.postDelayed(new Runnable() {
-                @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-                @Override
-                public void run() {
-                    final int size = mAdapter.mPhotos.size();
-                    for (int i = 0; i < size; i++) {
-                        if (mAdapter.mPhotos.get(i).isChecked()) {
-                            mGridView.setItemChecked(i, true);
-                        }
-                    }
-                }
-            }, 100L);
+            mSetupRunnable = new SetupRunnable();
+            mGridView.postDelayed(mSetupRunnable, 100L);
         }
         //in pre honeycomb version this job belongs
         // to mAdapter and manual background setting.
@@ -256,6 +250,20 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
                 );
             }
             return null;
+        }
+    }
+
+    private class SetupRunnable implements Runnable {
+        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+        @Override
+        public void run() {
+            final int size = mAdapter.mPhotos.size();
+            for (int i = 0; i < size; i++) {
+                if (mAdapter.mPhotos.get(i).isChecked()) {
+                    mGridView.setItemChecked(i, true);
+                }
+            }
+            mSetupRunnable = null;
         }
     }
 }
