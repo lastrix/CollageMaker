@@ -2,8 +2,6 @@
 <resources>
 
     <string name="app_name">ДаешьКоллаж!</string>
-    <string name="icon_desc_instagram">Инстаграм</string>
-    <string name="btn_give_me_collage">Давай коллаж!</string>
     <string name="error_no_username_specified">Ошибка: имя пользователя не задано</string>
     <string name="error_user_check_failed">Ошибка: проверка пользователя не удалась</string>
     <string name="error_no_user_found">Ошибка: пользователя с таким именем не обнаружено</string>
@@ -20,9 +18,14 @@
     <string name="zoom_out">Уменьшить</string>
     <string name="action_apply">Принять</string>
     <string name="action_cancel">Отменить</string>
-    <string name="my_collage">Мой коллаж</string>
     <string name="send_email_using">Отправить письмо используя:</string>
     <string name="message_loading">Загружаю фотографии…</string>
-    <string name="title_loading">Loading</string>
+    <string name="title_search">Поиск</string>
+    <string name="hint_search_user">Пользователь инстаграма</string>
+    <string name="info_no_results">Ничего не найдено</string>
+    <string name="content_no_description">Описание отсутствует</string>
+    <string name="title_activity_user_photos">Фотографии пользователя</string>
+    <string name="title_loading">Загрузка</string>
+    <string name="action_collage">Коллаж</string>
 
 </resources>

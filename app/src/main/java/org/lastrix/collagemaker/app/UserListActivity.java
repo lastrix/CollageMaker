@@ -85,6 +85,10 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
                 //let ActionBar expand SearchView
                 return false;
 
+            case R.id.action_collage:
+                startActivity(new Intent(this, CollageActivity.class));
+                return true;
+
             default:
                 return false;
         }

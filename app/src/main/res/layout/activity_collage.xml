@@ -6,19 +6,10 @@
               android:baselineAligned="false"
               android:orientation="horizontal">
 
-    <ListView
-            android:layout_width="256dp"
-            android:layout_height="match_parent"
-            android:id="@+id/grid_view_photos"
-            android:choiceMode="multipleChoice"
-            android:layout_weight="0.25"
-            android:background="@drawable/abc_ab_solid_light_holo"/>
-
     <view
+            xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             class="org.lastrix.collagemaker.app.gfx.GFXSurfaceView"
-            android:id="@+id/preview"
-            android:layout_weight="0.25"/>
-
+            android:id="@+id/surface_collage"/>
 </LinearLayout>

@@ -1,9 +1,14 @@
 package org.lastrix.collagemaker.app;
 
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.SearchView;
+import android.view.Menu;
+import android.view.MenuItem;
 import org.lastrix.collagemaker.app.content.User;
 
 
@@ -34,4 +39,24 @@ public class UserPhotosActivity extends ActionBarActivity {
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_user_photo, menu);
+        return true;
+    }
+
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_collage:
+                startActivity(new Intent(this, CollageActivity.class));
+                return true;
+
+            default:
+                return false;
+        }
+    }
 }

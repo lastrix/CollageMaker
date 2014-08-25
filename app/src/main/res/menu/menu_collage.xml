@@ -19,12 +19,4 @@
             android:title="@string/accept"
             android:icon="@android:drawable/ic_menu_gallery"
             tool:showAsAction="always|withText"/>
-    <item
-            android:id="@+id/select_all"
-            android:title="@string/all"
-            tool:showAsAction="always|withText"/>
-    <item
-            android:id="@+id/select_none"
-            android:title="@string/none"
-            tool:showAsAction="always|withText"/>
 </menu>
