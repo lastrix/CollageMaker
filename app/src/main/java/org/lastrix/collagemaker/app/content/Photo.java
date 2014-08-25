@@ -59,7 +59,7 @@ public class Photo {
      * @param imageUrl     -- full-sized image
      * @param likes        -- amount of likes for this photo
      */
-    public Photo(@NonNull User user, @NonNull String thumbnailUrl, @NonNull String imageUrl, int likes) {
+    public Photo(User user, @NonNull String thumbnailUrl, @NonNull String imageUrl, int likes) {
         this(-1, user, thumbnailUrl, imageUrl, likes, false);
     }
 
@@ -73,7 +73,7 @@ public class Photo {
      * @param likes        -- amount of likes for this photo
      * @param checked      -- photo should be included in collage if this parameter is true
      */
-    public Photo(long id, @NonNull User user, @NonNull String thumbnailUrl, @NonNull String imageUrl, int likes, boolean checked) {
+    public Photo(long id, User user, @NonNull String thumbnailUrl, @NonNull String imageUrl, int likes, boolean checked) {
         this.mId = id;
         this.mUser = user;
         this.mThumbnailUrl = thumbnailUrl;
@@ -90,7 +90,7 @@ public class Photo {
      * @return Photo object
      * @throws java.lang.IllegalArgumentException if 'owner' is not owner of this entry; or data corruption see {@link Cursor#getColumnIndexOrThrow(String)}
      */
-    public static Photo fromCursor(@NonNull User owner, @NonNull Cursor cursor) throws IllegalArgumentException {
+    public static Photo fromCursor(User owner, @NonNull Cursor cursor) throws IllegalArgumentException {
         final long id = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID));
         final long userId = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_USER_ID));
         final String thumbUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_THUMBNAIL_URL));
@@ -99,7 +99,7 @@ public class Photo {
         final boolean checked = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_CHECKED)) != 0;
 
         //sanity check
-        if (userId != owner.getId()) throw new IllegalArgumentException("userId != photo.ownerId");
+        if (owner != null && userId != owner.getId()) throw new IllegalArgumentException("userId != photo.ownerId");
 
         //construct object
         return new Photo(id, owner, thumbUrl, imageUrl, likes, checked);

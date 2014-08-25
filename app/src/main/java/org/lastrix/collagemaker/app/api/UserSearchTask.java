@@ -15,6 +15,7 @@ import org.lastrix.collagemaker.app.BuildConfig;
 import org.lastrix.collagemaker.app.content.ContentHelper;
 import org.lastrix.collagemaker.app.content.User;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     private static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert users to database";
     private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
     private static final String LOG_TAG = UserSearchTask.class.getSimpleName();
+    private static final String LOG_MESSAGE_EXCEPTION = "Exception:";
     private volatile boolean mCanceled;
     private ProgressDialog mProgressDialog;
     private Listener mListener;
@@ -55,13 +57,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
             return;
         }
         mCanceled = true;
-        if (mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
-        }
-        mProgressDialog.setOnCancelListener(null);
-        mProgressDialog = null;
-        mListener = null;
-        mContentResolver = null;
+        reset();
     }
 
     @Override
@@ -71,14 +67,18 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
             return;
         }
 
+        if (users != null) {
+            mListener.onSearchCompleted(new ArrayList<User>(users));
+            users.clear();
+        } else if (mError != null) {
+            mListener.onSearchFailed(mError);
+        }
+        reset();
+    }
+
+    private void reset() {
         if (mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
-        }
-
-        if (users == null) {
-            mListener.onSearchFailed(mError);
-        } else {
-            mListener.onSearchCompleted(users);
         }
         mListener = null;
         mProgressDialog.setOnCancelListener(null);
@@ -117,10 +117,8 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
                 //clear local cache
                 list.clear();
             }
-        } catch (ApiException e) {
-            mError = e;
-            return null;
-        } catch (JSONException e) {
+        } catch (Exception e) {
+            Log.e(LOG_TAG, LOG_MESSAGE_EXCEPTION, e);
             mError = e;
             return null;
         }

@@ -38,6 +38,7 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
     private static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert photos to database";
     private static final String LOG_MESSAGE_FAILED_DATABASE = "Failed to load data from database";
     private static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+    public static final String LOG_MESSAGE_EXCEPTION = "Exception:";
 
     private volatile boolean mCanceled;
     private ProgressDialog mProgressDialog;
@@ -74,21 +75,13 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
             return;
         }
 
-        if (mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
-        }
-
-        if (photos == null) {
-            mListener.onLoadingFailed(mError);
-        } else {
+        if (photos != null) {
             mListener.onLoadingCompleted(new ArrayList<Photo>(photos));
             photos.clear();
+        } else if ( mError != null ){
+            mListener.onLoadingFailed(mError);
         }
-        mListener = null;
-        mProgressDialog.setOnCancelListener(null);
-        mProgressDialog = null;
-        mError = null;
-        mContentResolver = null;
+        reset();
     }
 
     @Override
@@ -98,6 +91,10 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
             return;
         }
         mCanceled = true;
+        reset();
+    }
+
+    private void reset() {
         if (mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
         }
@@ -105,6 +102,7 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
         mProgressDialog = null;
         mListener = null;
         mContentResolver = null;
+        mError = null;
     }
 
     @Override
@@ -133,10 +131,8 @@ public class PopularPhotosTask extends AsyncTask<User, Void, List<Photo>> implem
                 photos.addAll(persist(userPhotos, user));
 
                 userPhotos.clear();
-            } catch (ApiException e) {
-                mError = e;
-                return null;
-            } catch (JSONException e) {
+            } catch (Exception e) {
+                Log.e(LOG_TAG, LOG_MESSAGE_EXCEPTION, e);
                 mError = e;
                 return null;
             }
