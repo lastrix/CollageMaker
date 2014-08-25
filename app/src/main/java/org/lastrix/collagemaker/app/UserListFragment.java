@@ -11,8 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import org.lastrix.collagemaker.app.api.User;
 import org.lastrix.collagemaker.app.api.UserSearchTask;
+import org.lastrix.collagemaker.app.content.User;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,13 +29,15 @@ import static android.support.v7.widget.SearchView.OnQueryTextListener;
 public class UserListFragment extends Fragment implements AdapterView.OnItemClickListener, UserSearchTask.Listener {
     public final static boolean LOG_ALL = BuildConfig.LOG_ALL;
     public final static String LOG_TAG = UserListFragment.class.getSimpleName();
+    public static final String CONFIG_LAST_SEARCHED = "lastSearched";
 
     private Listener mListener;
     private UserListViewAdapter mAdapter;
     private ListView mListView;
-    private OnQueryTextListener mQueryTextListener;
+    private UserSearchOnQueryTextListener mQueryTextListener;
     private UserSearchTask mSearchTask;
     private ProgressDialog mProgressDialog;
+    private String mLastSearched = null;
 
 
     public UserListFragment() {
@@ -47,6 +49,10 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         super.onCreate(savedInstanceState);
 
         mQueryTextListener = new UserSearchOnQueryTextListener(this);
+
+        if (savedInstanceState != null) {
+            mLastSearched = savedInstanceState.getString(CONFIG_LAST_SEARCHED);
+        }
     }
 
     @Override
@@ -68,6 +74,10 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setTitle(R.string.title_loading);
         mProgressDialog.setCancelable(true);
+
+        if (mLastSearched != null) {
+            searchFor(mLastSearched);
+        }
     }
 
     @Override
@@ -96,6 +106,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mListView = null;
         mAdapter = null;
         mProgressDialog = null;
+        mQueryTextListener.mFragment = null;
         mQueryTextListener = null;
     }
 
@@ -108,6 +119,14 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         mListener.onUserSelected((User) mAdapter.getItem(position));
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mLastSearched != null) {
+            outState.putString(CONFIG_LAST_SEARCHED, mLastSearched);
+        }
     }
 
     OnQueryTextListener getQueryTextListener() {
@@ -128,6 +147,17 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         mSearchTask = null;
     }
 
+    private void searchFor(String s) {
+        if (mSearchTask != null) {
+            mSearchTask.cancel(true);
+            mSearchTask = null;
+        }
+        mSearchTask = new UserSearchTask(this, mProgressDialog, getActivity().getContentResolver());
+        mSearchTask.execute(s);
+        mLastSearched = s;
+    }
+
+
     public interface Listener {
 
         public void onUserSelected(User user);
@@ -142,12 +172,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
 
         @Override
         public boolean onQueryTextSubmit(String s) {
-            if (mFragment.mSearchTask != null) {
-                mFragment.mSearchTask.cancel(true);
-                mFragment.mSearchTask = null;
-            }
-            mFragment.mSearchTask = new UserSearchTask(mFragment, mFragment.mProgressDialog);
-            mFragment.mSearchTask.execute(s);
+            mFragment.searchFor(s);
             return true;
         }
 

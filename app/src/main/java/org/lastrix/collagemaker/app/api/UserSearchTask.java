@@ -1,12 +1,21 @@
 package org.lastrix.collagemaker.app.api;
 
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.database.Cursor;
 import android.os.AsyncTask;
+import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.lastrix.collagemaker.app.BuildConfig;
+import org.lastrix.collagemaker.app.content.ContentHelper;
+import org.lastrix.collagemaker.app.content.Photo;
+import org.lastrix.collagemaker.app.content.User;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,14 +24,19 @@ import java.util.List;
  */
 public class UserSearchTask extends AsyncTask<String, Void, List<User>> implements DialogInterface.OnCancelListener {
 
+    public static final String LOG_MESSAGE_FAILED_INSERT = "Failed to insert users to database";
+    public static final boolean LOG_ALL = BuildConfig.LOG_ALL;
+    private static final String LOG_TAG = UserSearchTask.class.getSimpleName();
     private volatile boolean mCanceled = false;
     private ProgressDialog mProgressDialog;
     private Listener mListener;
     private Throwable mError;
+    private ContentResolver mContentResolver;
 
-    public UserSearchTask(Listener mListener, ProgressDialog mProgressDialog) {
+    public UserSearchTask(Listener mListener, ProgressDialog mProgressDialog, ContentResolver contentResolver) {
         this.mListener = mListener;
         this.mProgressDialog = mProgressDialog;
+        mContentResolver = contentResolver;
         mProgressDialog.setOnCancelListener(this);
     }
 
@@ -34,6 +48,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         mProgressDialog.setOnCancelListener(null);
         mProgressDialog = null;
         mListener = null;
+        mContentResolver = null;
     }
 
     @Override
@@ -53,6 +68,7 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
         mProgressDialog.setOnCancelListener(null);
         mProgressDialog = null;
         mError = null;
+        mContentResolver = null;
     }
 
     @Override
@@ -64,13 +80,22 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
     @Override
     protected List<User> doInBackground(String... params) {
         List<User> users = new LinkedList<User>();
+        List<User> list = new LinkedList<User>();
         try {
             for (String username : params) {
+                if (fetchFromDatabase(users, username)) {
+                    continue;
+                }
+
                 String next = API.getApiUserSearchUrl(username);
                 while (next != null) {
                     if (mCanceled) return null;
-                    next = fetch(next, users);
+                    next = fetch(next, list);
                 }
+
+                users.addAll(saveToDatabase(list, username));
+
+                list.clear();
             }
         } catch (ApiException e) {
             mError = e;
@@ -80,6 +105,49 @@ public class UserSearchTask extends AsyncTask<String, Void, List<User>> implemen
             return null;
         }
         return users;
+    }
+
+    private Collection<? extends User> saveToDatabase(List<User> list, String username) {
+        int size = list.size();
+        ContentValues[] values = new ContentValues[size];
+        int idx = 0;
+        for (User user : list) {
+            values[idx++] = user.asContentValues();
+        }
+
+        //bulkInsert always better than insert
+        if (size != mContentResolver.bulkInsert(ContentHelper.getUserUri(null), values)) {
+            Log.e(LOG_TAG, LOG_MESSAGE_FAILED_INSERT);
+            throw new IllegalStateException(LOG_MESSAGE_FAILED_INSERT);
+        }
+
+        //ids are same, so it's safe to use this objects.
+        return list;
+    }
+
+    private boolean fetchFromDatabase(List<User> users, String username) {
+        final Cursor cursor = mContentResolver.query(
+                ContentHelper.getUserUri(null),
+                null,
+                String.format("%s LIKE ?", User.COLUMN_NICK),
+                new String[]{username + "%"},
+                Photo.COLUMN_ID);
+
+        //if nothing found - just return false
+        if (cursor == null || cursor.getCount() == 0) {
+            if (cursor != null) cursor.close();
+            return false;
+        }
+
+        // convert data to internal objects
+        cursor.moveToFirst();
+        do {
+            users.add(User.fromCursor(cursor));
+        } while (cursor.moveToNext());
+        cursor.close();
+
+        //data was loaded - return true
+        return true;
     }
 
     /**

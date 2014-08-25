@@ -1,6 +1,7 @@
 package org.lastrix.collagemaker.app;
 
 import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -10,9 +11,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import org.lastrix.collagemaker.app.api.Photo;
 import org.lastrix.collagemaker.app.api.PopularPhotosTask;
-import org.lastrix.collagemaker.app.api.User;
+import org.lastrix.collagemaker.app.content.Photo;
+import org.lastrix.collagemaker.app.content.User;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +50,9 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
      */
     public static UserPhotosFragment newInstance(User user) {
         UserPhotosFragment fragment = new UserPhotosFragment();
-        fragment.setArguments(user.asBundle());
+        if (user != null) {
+            fragment.setArguments(user.asBundle());
+        }
         return fragment;
     }
 
@@ -111,7 +114,7 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
 
     private void load() {
         mCanceled = false;
-        mPopularPhotosTask = new PopularPhotosTask(this, mProgressDialog);
+        mPopularPhotosTask = new PopularPhotosTask(this, mProgressDialog, getActivity().getContentResolver());
         mPopularPhotosTask.execute(mUser);
     }
 
@@ -202,6 +205,14 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
             int position;
             boolean loaded;
             ImageView thumbnail;
+        }
+    }
+
+    private static class SelectionChangedTask extends AsyncTask<Photo, Void, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(Photo... params) {
+            return null;
         }
     }
 }

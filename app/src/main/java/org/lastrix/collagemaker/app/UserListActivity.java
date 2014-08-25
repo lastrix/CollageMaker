@@ -9,8 +9,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
-import org.lastrix.collagemaker.app.api.User;
 import org.lastrix.collagemaker.app.api.UserSearchTask;
+import org.lastrix.collagemaker.app.content.User;
 
 
 /**
@@ -30,14 +30,20 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_request);
+        setContentView(R.layout.activity_users_list);
 
 
         mUserListFragment = (UserListFragment) getSupportFragmentManager().findFragmentById(R.id.user_list);
 
-        if (findViewById(R.id.user_photos) != null) {
+        if (findViewById(R.id.fragment_container) != null) {
             //install photos fragment
             mTwoPane = true;
+
+            if (savedInstanceState == null) {
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.fragment_container, UserPhotosFragment.newInstance(null))
+                        .commit();
+            }
         }
     }
 
@@ -102,7 +108,7 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
         if (mTwoPane) {
             //simply replace old one
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.user_photos, UserPhotosFragment.newInstance(user))
+                    .replace(R.id.fragment_container, UserPhotosFragment.newInstance(user))
                     .commit();
         } else {
             //start intent

@@ -12,8 +12,8 @@ import android.widget.*;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-import org.lastrix.collagemaker.app.api.Photo;
-import org.lastrix.collagemaker.app.api.User;
+import org.lastrix.collagemaker.app.content.Photo;
+import org.lastrix.collagemaker.app.content.User;
 import org.lastrix.collagemaker.app.gfx.GFXSurfaceView;
 import rx.Observable;
 import rx.Subscriber;
@@ -434,7 +434,7 @@ public class CollageActivity extends ActionBarActivity implements AdapterView.On
         @Override
         public void onNext(Photo photo) {
             mThumbnails.add(photo.getThumbnailUrl());
-            mImages.add(photo.getStandardResolutionUrl());
+            mImages.add(photo.getImageUrl());
         }
     }
 

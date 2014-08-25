@@ -17,13 +17,20 @@
             android:layout_gravity="center_vertical"
             tools:layout="@layout/fragment_user_list"/>
 
-    <fragment
+    <FrameLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:name="org.lastrix.collagemaker.app.UserPhotosFragment"
-            android:id="@+id/user_photos"
-            android:layout_gravity="center_vertical"
             android:layout_weight="@integer/activity_request_container_weight"
-            tools:layout="@layout/fragment_user_photos"/>
+            android:id="@+id/fragment_container">
+    </FrameLayout>
+
+    <!--<fragment-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:name="org.lastrix.collagemaker.app.UserPhotosFragment"-->
+            <!--android:id="@+id/user_photos"-->
+            <!--android:layout_gravity="center_vertical"-->
+            <!--android:layout_weight="@integer/activity_request_container_weight"-->
+            <!--tools:layout="@layout/fragment_user_photos"/>-->
 
 </LinearLayout>

@@ -10,6 +10,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lastrix.collagemaker.app.BuildConfig;
+import org.lastrix.collagemaker.app.content.User;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,7 +41,12 @@ final class API {
     public static final String JSON_DATA_IMAGES = "images";
     public static final String JSON_DATA_IMAGES_THUMBNAIL = "thumbnail";
     public static final String JSON_DATA_IMAGES_STANDARD_RESOLUTION = "standard_resolution";
+    public static final String JSON_DATA_TYPE = "type";
+    public static final String JSON_DATA_LIKES = "likes";
+    public static final String JSON_DATA_LIKES_COUNT_ATTR = "count";
     public static final String JSON_URL_ATTR = "url";
+
+    public static final String DATA_TYPE_IMAGE = "image";
 
 
     public static final String LOG_MESSAGE_CONNECTION_PROBLEM = "Connection problem";
@@ -176,5 +182,13 @@ final class API {
 
     public static String getImageUrl(JSONObject entry, String resolution) throws JSONException {
         return entry.getJSONObject(resolution).getString(JSON_URL_ATTR);
+    }
+
+    public static boolean isImage(JSONObject entry) throws JSONException {
+        return DATA_TYPE_IMAGE.equals(entry.getString(JSON_DATA_TYPE));
+    }
+
+    public static int getLikes(JSONObject entry) throws JSONException {
+        return entry.getJSONObject(JSON_DATA_LIKES).getInt(JSON_DATA_LIKES_COUNT_ATTR);
     }
 }

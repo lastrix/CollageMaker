@@ -4,7 +4,7 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-import org.lastrix.collagemaker.app.api.User;
+import org.lastrix.collagemaker.app.content.User;
 
 
 public class UserPhotosActivity extends ActionBarActivity {
@@ -29,7 +29,7 @@ public class UserPhotosActivity extends ActionBarActivity {
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.user_photos, UserPhotosFragment.newInstance(user))
+                    .add(R.id.fragment_container, UserPhotosFragment.newInstance(user))
                     .commit();
         }
     }
