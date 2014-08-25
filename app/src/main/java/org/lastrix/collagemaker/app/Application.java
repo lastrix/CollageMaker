@@ -11,13 +11,9 @@ import java.util.concurrent.Executors;
  */
 public class Application extends android.app.Application {
 
-    private ExecutorService mExecutorService;
-
     @Override
     public void onCreate() {
         super.onCreate();
-        mExecutorService = Executors.newSingleThreadExecutor();
-
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
                 .build();
         ImageLoader.getInstance().init(config);
@@ -33,10 +29,5 @@ public class Application extends android.app.Application {
     public void onTerminate() {
         super.onTerminate();
         ImageLoader.getInstance().destroy();
-        mExecutorService.shutdown();
-    }
-
-    public void doInBackground(Runnable runnable) {
-        mExecutorService.submit(runnable);
     }
 }
