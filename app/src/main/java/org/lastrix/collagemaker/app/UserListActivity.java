@@ -58,7 +58,7 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_request, menu);
+        getMenuInflater().inflate(R.menu.menu_user_list, menu);
 
         final SearchView searchText = getSearchView(menu);
         searchText.setQueryHint(getString(R.string.hint_search_user));
