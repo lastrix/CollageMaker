@@ -5,15 +5,16 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
+
 import org.lastrix.collagemaker.app.content.ResetSelectionTask;
 import org.lastrix.collagemaker.app.content.User;
 
-
+/**
+ * Activity for one-pane mode, used for phones or low density screens.
+ */
 public class UserPhotosActivity extends ActionBarActivity {
 
 
@@ -46,7 +47,6 @@ public class UserPhotosActivity extends ActionBarActivity {
     }
 
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -56,6 +56,10 @@ public class UserPhotosActivity extends ActionBarActivity {
 
             case R.id.action_reset:
                 new ResetSelectionTask(getContentResolver()).execute();
+                return true;
+
+            case R.id.action_collage:
+                startActivity(new Intent(this, CollageActivity.class));
                 return true;
 
             default:

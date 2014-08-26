@@ -8,6 +8,8 @@
 
     <string name="error_search_failed">Error: user search failed</string>
     <string name="error_index_loading_failed">Error: failed to load list of popular user images</string>
+    <string name="error_saving_failed">Error: saving failed.</string>
+    <string name="error_fetch_failed">Error: image fetching failed.</string>
 
     <string name="action_accept">Accept</string>
     <string name="action_zoom_in">Zoom in</string>
@@ -24,5 +26,6 @@
 
     <string name="title_loading">Loading</string>
     <string name="title_search">Search</string>
-
+    <string name="title_send_image">Send image</string>
+    <string name="title_saving">Saving</string>
 </resources>

@@ -1,26 +1,27 @@
 package org.lastrix.collagemaker.app.gfx;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+
 import org.lastrix.collagemaker.app.content.Photo;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Custom GLSurfaceView.
+ * Custom GLSurfaceView. See {@link #requestCapture()}, {@link #add(java.util.List)},
+ * {@link #zoom(float)}.
  * Created by lastrix on 8/17/14.
  */
 public final class GFXSurfaceView extends GLSurfaceView {
@@ -42,7 +43,6 @@ public final class GFXSurfaceView extends GLSurfaceView {
         init();
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private void init() {
         setEGLContextClientVersion(2);
 
@@ -57,11 +57,15 @@ public final class GFXSurfaceView extends GLSurfaceView {
     }
 
     /**
-     * Send
+     * Send destory signal
      */
     public void onDestroy() {
-        mRenderer.requestDestroy();
-        requestRender();
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.dispose();
+            }
+        });
     }
 
 
@@ -69,13 +73,20 @@ public final class GFXSurfaceView extends GLSurfaceView {
     public void onResume() {
         super.onResume();
         mRenderer.setGfxListener((GFXListener) getContext());
-        requestRender();
+        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mRenderer.setGfxListener(null);
+        //free all memory
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.clearState();
+            }
+        });
     }
 
     @Override
@@ -113,19 +124,41 @@ public final class GFXSurfaceView extends GLSurfaceView {
         return false;
     }
 
+    /**
+     * Change current zoom
+     *
+     * @param dZoom -- how zoom should be changed
+     */
     public void zoom(float dZoom) {
         mRenderer.setZoom(mRenderer.getZoom() + dZoom);
         requestRender();
     }
 
+    /**
+     * Request screen capture. Bitmap would be passed to {@link org.lastrix.collagemaker.app.gfx.GFXListener}
+     */
     public void requestCapture() {
         mRenderer.requestCapture();
         requestRender();
     }
 
+    /**
+     * Add photos to surface, for each photo image would be downloaded
+     * and converted to internal entity object.
+     *
+     * @param photos -- list of photo
+     */
     public void add(final List<Photo> photos) {
         ImageLoader loader = ImageLoader.getInstance();
         final int size = photos.size();
+
+        //if user selected nothing
+        if (size == 0) {
+            onLoadingCompleted();
+            return;
+        }
+
+        //if not - do the job!
         mPending = new AtomicInteger(size);
         queueEvent(new Runnable() {
             @Override
@@ -133,17 +166,36 @@ public final class GFXSurfaceView extends GLSurfaceView {
                 mRenderer.onLoading(size);
             }
         });
+
         for (Photo photo : photos) {
             loader.loadImage(photo.getImageUrl(), new GFXImageLoadingListener(this, mPending));
         }
     }
 
+    /**
+     * Called when loading completed
+     */
     private void onLoadingCompleted() {
-        mRenderer.ready();
-        requestRender();
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.ready();
+                requestRender();
+                setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+            }
+        });
     }
 
+    /**
+     * Updates current progress
+     */
+    private void updateProgress() {
+        mRenderer.onProgress(mPending.get());
+    }
+
+    /**
+     * New entity creation task
+     */
     private static class NewGFXEntityRunnable implements Runnable {
         private GFXSurfaceView mSurfaceView;
         private Bitmap mImage;
@@ -169,6 +221,10 @@ public final class GFXSurfaceView extends GLSurfaceView {
         }
     }
 
+    /**
+     * Listens image loading.
+     * Since some tasks could fail - this one would make you sure, that loading won't be forever.
+     */
     private static class GFXImageLoadingListener implements ImageLoadingListener {
         private GFXSurfaceView mSurfaceView;
         private AtomicInteger mPending;
@@ -210,9 +266,5 @@ public final class GFXSurfaceView extends GLSurfaceView {
         public void onLoadingCancelled(String imageUri, View view) {
             reset();
         }
-    }
-
-    private void updateProgress() {
-        mRenderer.onProgress(mPending.get());
     }
 }

@@ -58,6 +58,10 @@ class GFXResource {
     };
     static final short TILE_ORDER[] = {0, 1, 2, 0, 2, 3}; // order to draw vertices
     private static final String LOG_TAG = GFXResource.class.getSimpleName();
+
+    public static final float ZOOM_MIN = 1f;
+    public static final float ZOOM_MAX = 10f;
+
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
     private final float[] mWorld = new float[16];
@@ -322,7 +326,7 @@ class GFXResource {
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
 
-        Matrix.orthoM(mProjectionMatrix, 0, -mZoom * mRatio, mZoom * mRatio, -mZoom, mZoom, 1, 10);
+        Matrix.orthoM(mProjectionMatrix, 0, -mZoom * mRatio, mZoom * mRatio, -mZoom, mZoom, ZOOM_MIN, ZOOM_MAX);
 
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mWorld, 0, mProjectionMatrix, 0, mViewMatrix, 0);
@@ -343,8 +347,10 @@ class GFXResource {
      * @param zoom -- new zoom
      */
     public void setZoom(float zoom) {
-        mZoom = zoom;
-        resetViewMatrix();
+        if ( zoom >= ZOOM_MIN && zoom <= ZOOM_MAX) {
+            mZoom = zoom;
+            resetViewMatrix();
+        }
     }
 
     /**

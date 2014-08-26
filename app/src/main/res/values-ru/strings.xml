@@ -8,6 +8,9 @@
 
     <string name="error_search_failed">Ошибка: сбой при поиске</string>
     <string name="error_index_loading_failed">Ошибка: не удалось загрузить список популярных фотографий пользователя</string>
+    <string name="error_saving_failed">Ошибка сохранения</string>
+    <string name="error_fetch_failed">Ошибка: не удалось загрузить изображения</string>
+
 
     <string name="action_accept">Принять</string>
     <string name="action_zoom_in">Увеличить</string>
@@ -24,5 +27,6 @@
 
     <string name="title_loading">Загрузка</string>
     <string name="title_search">Поиск</string>
-
+    <string name="title_send_image">Send image</string>
+    <string name="title_saving">Saving</string>
 </resources>
