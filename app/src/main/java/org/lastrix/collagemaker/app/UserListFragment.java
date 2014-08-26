@@ -247,7 +247,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
 
                 holder.position = position;
                 holder.user = user;
-                holder.photo.setImageResource(android.R.drawable.ic_menu_report_image);
+                holder.photo.setImageResource(R.drawable.ic_loading_user);
                 holder.name.setText(user.getName());
                 holder.nick.setText(user.getUsername());
 

@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +26,7 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
 
     private boolean mTwoPane = false;
     private UserSearchOnQueryTextListener mQueryListener;
+    private String mSearch = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,17 +65,50 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
         final SearchView searchText = getSearchView(menu);
         searchText.setQueryHint(getString(R.string.hint_search_user));
         searchText.setOnQueryTextListener(mQueryListener);
-
         return true;
     }
 
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private SearchView getSearchView(Menu menu) {
         final SearchView searchText;
+        MenuItem menuItem = menu.findItem(R.id.action_search);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            final MenuItem menuItem = menu.findItem(R.id.action_search);
             searchText = (SearchView) MenuItemCompat.getActionView(menuItem);
         } else {
-            searchText = (SearchView) menu.findItem(R.id.action_search).getActionView();
+            searchText = (SearchView) menuItem.getActionView();
+        }
+
+        //prefer using native code over compat
+        if ( Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH ) {
+            MenuItemCompat.setOnActionExpandListener(menuItem, new MenuItemCompat.OnActionExpandListener() {
+                @Override
+                public boolean onMenuItemActionExpand(MenuItem menuItem) {
+                    return true;
+                }
+
+                @Override
+                public boolean onMenuItemActionCollapse(MenuItem menuItem) {
+                    if (TextUtils.isEmpty(searchText.getQuery().toString())){
+                        searchFor(null);
+                    }
+                    return true;
+                }
+            });
+        } else {
+            menuItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+                @Override
+                public boolean onMenuItemActionExpand(MenuItem item) {
+                    return true;
+                }
+
+                @Override
+                public boolean onMenuItemActionCollapse(MenuItem item) {
+                    if (TextUtils.isEmpty(searchText.getQuery().toString())){
+                        searchFor(null);
+                    }
+                    return true;
+                }
+            });
         }
         return searchText;
     }
@@ -117,6 +152,11 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
     }
 
     private void searchFor(String username) {
+        if ( mSearch != null && mSearch.equals(username)
+                || mSearch == null && username == null){
+            return;
+        }
+        mSearch = username;
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container_user_list, UserListFragment.newInstance(username))
                 .commit();

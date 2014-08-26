@@ -273,24 +273,6 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="rxjava-android-0.19.6">
-      <CLASSES>
-        <root url="jar:///var/tmp/gradle/caches/modules-2/files-2.1/com.netflix.rxjava/rxjava-android/0.19.6/c4a0635d906397bbe144896fa6f6867668cabb40/rxjava-android-0.19.6.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES>
-        <root url="jar:///var/tmp/gradle/caches/modules-2/files-2.1/com.netflix.rxjava/rxjava-android/0.19.6/8db0db7406ced292fd5af63fdc060e42b9e590ff/rxjava-android-0.19.6-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="rxjava-core-0.19.6">
-      <CLASSES>
-        <root url="jar:///var/tmp/gradle/caches/modules-2/files-2.1/com.netflix.rxjava/rxjava-core/0.19.6/b18f01b635f39f0a6af7ae792f07cb003a51e6a2/rxjava-core-0.19.6.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES>
-        <root url="jar:///var/tmp/gradle/caches/modules-2/files-2.1/com.netflix.rxjava/rxjava-core/0.19.6/1b9e25d6073fc6b96b661ae94e172781c81f9eec/rxjava-core-0.19.6-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="support-annotations-20.0.0">
       <CLASSES>
         <root url="jar:///opt/android-sdk-update-manager/extras/android/m2repository/com/android/support/support-annotations/20.0.0/support-annotations-20.0.0.jar!/" />
