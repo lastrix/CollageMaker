@@ -7,10 +7,7 @@ import org.lastrix.collagemaker.app.BuildConfig;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by lastrix on 8/17/14.
@@ -36,9 +33,12 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     private volatile boolean mLoading = true;
     private GFXResource mGfxResource;
     private volatile boolean mCapture = false;
+    private float mMax;
+    private GFXEntity mLoadingEntity;
 
     public GFXRenderer() {
         mGfxListener = DUMMY_LISTENER;
+        mLoadingEntity = GFXEntity.create();
     }
 
     @Override
@@ -54,6 +54,10 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mGfxResource.surfaceChanged(gl, width, height);
+        float scaleY = getZoom();
+        float scaleX = scaleY * mGfxResource.getRatio();
+        mLoadingEntity.setScale(scaleX, scaleY);
+        mLoadingEntity.setPosition(-scaleX, -scaleY);
     }
 
     public void setGfxListener(GFXListener gfxListener) {
@@ -72,9 +76,6 @@ class GFXRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        if (LOG_ALL) {
-            Log.v(LOG_TAG, "Drawing new frame: " + mLoading + "  " + mEntities.size());
-        }
         if (mLoading) {
             drawLoadingScreen(unused);
         } else if (mEntities.size() > 0) {
@@ -98,8 +99,10 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     private void drawLoadingScreen(GL10 unused) {
-        //TODO: think about loading screen
         mGfxResource.bind(unused);
+        synchronized (mLock) {
+            mGfxResource.draw(unused, mLoadingEntity.getModel(), 0);
+        }
         mGfxResource.unbind(unused);
     }
 
@@ -125,6 +128,7 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     void putToTop(GFXEntity e) {
+        if ( mLoading ) return;
         synchronized (mLock) {
             mDrawOrder.remove(e);
             mDrawOrder.add(e);
@@ -132,6 +136,8 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     public GFXEntity getEntityUnder(float x, float y) {
+        if ( mLoading) return null;
+
         synchronized (mLock) {
             Iterator<GFXEntity> it = mDrawOrder.descendingIterator();
             GFXEntity e;
@@ -158,7 +164,9 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     public void setZoom(float zoom) {
-        mGfxResource.setZoom(zoom);
+        if ( !mLoading) {
+            mGfxResource.setZoom(zoom);
+        }
     }
 
     public void requestDestroy() {
@@ -166,6 +174,31 @@ class GFXRenderer implements GLSurfaceView.Renderer {
     }
 
     public void ready() {
+        synchronized (mLock){
+            //place entities correctly
+            Random random = new Random(mEntities.size());
+            final float xLim = getZoom() * mGfxResource.getRatio();
+            final float yLim = getZoom();
+
+            for(GFXEntity entity : mEntities){
+                entity.setPosition(xLim *(random.nextFloat()*1.5f-0.75f), yLim * (random.nextFloat()*1.5f-0.75f));
+            }
+        }
         mLoading = false;
+    }
+
+    public void onLoading(int max) {
+        mMax = (float)max;
+        float scale = getZoom()*2f;
+        synchronized (mLock) {
+            mLoadingEntity.setScale(scale * mGfxResource.getRatio(), scale);
+        }
+    }
+
+    public void onProgress(int left) {
+        float scale = (float)left/mMax * getZoom()*2f;
+        synchronized (mLock) {
+            mLoadingEntity.setScale(scale * mGfxResource.getRatio(), mLoadingEntity.getScaleY());
+        }
     }
 }

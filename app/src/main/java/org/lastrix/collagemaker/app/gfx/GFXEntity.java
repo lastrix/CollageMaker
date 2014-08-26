@@ -20,7 +20,7 @@ class GFXEntity {
     private static float[] sScratch = new float[16];
 
     private float mX, mY;
-    private float mScale;
+    private float mScaleX, mScaleY;
     private int mTextureId;
     private float mRatio;
     private float[] mModel;
@@ -41,9 +41,10 @@ class GFXEntity {
     private GFXEntity(int textureId, float ratio) {
         mTextureId = textureId;
         mRatio = ratio;
-        mX = 0;
-        mY = 0;
-        mScale = 0;
+        mX = 0f;
+        mY = 0f;
+        mScaleX = 1f;
+        mScaleY = 1f;
         mModel = new float[16];
         resetModel();
     }
@@ -70,22 +71,21 @@ class GFXEntity {
     }
 
     /**
+     * Creates blank entity with no texture
+     *
+     * @return entity
+     */
+    public static GFXEntity create() {
+        return new GFXEntity(0, 1f);
+    }
+
+    /**
      * Get x
      *
      * @return x
      */
     public float getX() {
         return mX;
-    }
-
-    /**
-     * Set x, reset model matrix.
-     *
-     * @param x -- new x
-     */
-    public void setX(float x) {
-        this.mX = x;
-        resetModel();
     }
 
     /**
@@ -98,41 +98,15 @@ class GFXEntity {
     }
 
     /**
-     * Set y, reset model matrix.
+     * Set scaleX (unused)
      *
-     * @param y -- new y
+     * @param scaleX -- new scale x
+     * @param scaleY -- new scale y
      */
-    public void setY(float y) {
-        this.mY = y;
+    public void setScale(float scaleX, float scaleY) {
+        this.mScaleX = scaleX;
+        this.mScaleY = scaleY;
         resetModel();
-    }
-
-    /**
-     * Get scale (unused)
-     *
-     * @return scale
-     */
-    public float getScale() {
-        return mScale;
-    }
-
-    /**
-     * Set scale (unused)
-     *
-     * @param scale -- new scale
-     */
-    public void setScale(float scale) {
-        this.mScale = scale;
-        resetModel();
-    }
-
-    /**
-     * Return object width/height ratio
-     *
-     * @return ratio
-     */
-    public float getRatio() {
-        return mRatio;
     }
 
     /**
@@ -152,7 +126,7 @@ class GFXEntity {
         Matrix.translateM(sTranslate, 0, mX, mY, 0.0f);
 
         Matrix.setIdentityM(sScale, 0);
-        Matrix.scaleM(sScale, 0, mRatio, 1f, 1f);
+        Matrix.scaleM(sScale, 0, mRatio * mScaleX, mScaleY, 1f);
 
         Matrix.multiplyMM(mModel, 0, sTranslate, 0, sScale, 0);
     }
@@ -174,5 +148,27 @@ class GFXEntity {
         int[] textures = new int[]{mTextureId};
         glDeleteTextures(1, textures, 0);
         mModel = null;
+    }
+
+    public void setPosition(float x, float y) {
+        this.mX = x;
+        this.mY = y;
+        resetModel();
+    }
+
+    /**
+     * Return scale y
+     * @return scaleY
+     */
+    public float getScaleY() {
+        return mScaleY;
+    }
+
+    /**
+     * Return scale x
+     * @return scaleX
+     */
+    public float getScaleX() {
+        return mScaleX;
     }
 }

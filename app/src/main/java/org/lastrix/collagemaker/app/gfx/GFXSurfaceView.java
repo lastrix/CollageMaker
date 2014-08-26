@@ -30,6 +30,7 @@ public final class GFXSurfaceView extends GLSurfaceView {
     private GFXEntity mDragged;
     private float mPreviousX;
     private float mPreviousY;
+    private AtomicInteger mPending;
 
     public GFXSurfaceView(Context context) {
         super(context);
@@ -102,8 +103,7 @@ public final class GFXSurfaceView extends GLSurfaceView {
             case MotionEvent.ACTION_MOVE:
                 if (mDragged == null)
                     break;
-                mDragged.setX(mDragged.getX() + (x - mPreviousX));
-                mDragged.setY(mDragged.getY() + (y - mPreviousY));
+                mDragged.setPosition(mDragged.getX() + (x - mPreviousX), mDragged.getY() + (y - mPreviousY));
                 mPreviousX = x;
                 mPreviousY = y;
                 requestRender();
@@ -128,7 +128,14 @@ public final class GFXSurfaceView extends GLSurfaceView {
 
     public void add(final List<Photo> photos) {
         ImageLoader loader = ImageLoader.getInstance();
-        final AtomicInteger mPending = new AtomicInteger(photos.size());
+        final int size = photos.size();
+        mPending = new AtomicInteger(size);
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.onLoading(size);
+            }
+        });
         for (Photo photo : photos) {
             loader.loadImage(photo.getImageUrl(), new GFXImageLoadingListener(this, mPending));
         }
@@ -156,6 +163,8 @@ public final class GFXSurfaceView extends GLSurfaceView {
             mSurfaceView.mRenderer.add(GFXEntity.create(mImage));
             if (mPending.decrementAndGet() == 0) {
                 mSurfaceView.onLoadingCompleted();
+            } else {
+                mSurfaceView.updateProgress();
             }
             mSurfaceView = null;
             mImage = null;
@@ -193,6 +202,8 @@ public final class GFXSurfaceView extends GLSurfaceView {
         private void reset() {
             if (mPending.decrementAndGet() == 0) {
                 mSurfaceView.onLoadingCompleted();
+            } else {
+                mSurfaceView.updateProgress();
             }
             mSurfaceView = null;
             mPending = null;
@@ -202,5 +213,9 @@ public final class GFXSurfaceView extends GLSurfaceView {
         public void onLoadingCancelled(String imageUri, View view) {
             reset();
         }
+    }
+
+    private void updateProgress() {
+        mRenderer.onProgress(mPending.get());
     }
 }

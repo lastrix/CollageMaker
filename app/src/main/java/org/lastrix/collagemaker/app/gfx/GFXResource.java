@@ -77,6 +77,7 @@ class GFXResource {
     private float mZoom = 3;
     private int mWidth;
     private int mHeight;
+    private float mRatio;
 
     public GFXResource() {
         mInitializing = true;
@@ -314,14 +315,14 @@ class GFXResource {
      * Calculate new view and projection matrices
      */
     private void resetViewMatrix() {
-        float ratio = (float) mWidth / mHeight;
+        mRatio = (float) mWidth / mHeight;
 
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, mZoom, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
 
-        Matrix.orthoM(mProjectionMatrix, 0, -mZoom * ratio, mZoom * ratio, -mZoom, mZoom, 1, 10);
+        Matrix.orthoM(mProjectionMatrix, 0, -mZoom * mRatio, mZoom * mRatio, -mZoom, mZoom, 1, 10);
 
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mWorld, 0, mProjectionMatrix, 0, mViewMatrix, 0);
@@ -387,5 +388,7 @@ class GFXResource {
         return bmp;
     }
 
-
+    public float getRatio() {
+        return mRatio;
+    }
 }
