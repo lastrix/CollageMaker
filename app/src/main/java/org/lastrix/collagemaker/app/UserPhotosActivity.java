@@ -9,6 +9,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
+import org.lastrix.collagemaker.app.content.ResetSelectionTask;
 import org.lastrix.collagemaker.app.content.User;
 
 
@@ -53,6 +54,10 @@ public class UserPhotosActivity extends ActionBarActivity {
         switch (item.getItemId()) {
             case R.id.action_collage:
                 startActivity(new Intent(this, CollageActivity.class));
+                return true;
+
+            case R.id.action_reset:
+                new ResetSelectionTask(getContentResolver()).execute();
                 return true;
 
             default:

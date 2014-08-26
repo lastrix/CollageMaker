@@ -6,4 +6,9 @@
             android:id="@+id/action_collage"
             android:title="@string/action_collage"
             tool:showAsAction="always|withText"/>
+
+    <item
+            android:id="@+id/action_reset"
+            android:title="@string/action_reset"
+            tool:showAsAction="ifRoom"/>
 </menu>

@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import org.lastrix.collagemaker.app.content.ResetSelectionTask;
 import org.lastrix.collagemaker.app.content.User;
 
 
@@ -119,6 +120,10 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
             case R.id.action_search:
                 //let ActionBar expand SearchView
                 return false;
+
+            case R.id.action_reset:
+                new ResetSelectionTask(getContentResolver()).execute();
+                return true;
 
             case R.id.action_collage:
                 startActivity(new Intent(this, CollageActivity.class));

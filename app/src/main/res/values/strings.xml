@@ -28,5 +28,6 @@
     <string name="title_activity_user_photos">UserPhotosActivity</string>
     <string name="title_loading">Loading</string>
     <string name="action_collage">Collage</string>
+    <string name="action_reset">Reset selection</string>
 
 </resources>

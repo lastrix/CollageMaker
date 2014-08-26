@@ -27,5 +27,6 @@
     <string name="title_activity_user_photos">Фотографии пользователя</string>
     <string name="title_loading">Загрузка</string>
     <string name="action_collage">Коллаж</string>
+    <string name="action_reset">Отмена выбора</string>
 
 </resources>
