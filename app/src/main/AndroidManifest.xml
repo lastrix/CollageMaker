@@ -32,7 +32,11 @@
         </activity>
         <activity
                 android:name="org.lastrix.collagemaker.app.PreviewActivity"
-                android:label="@string/title_activity_preview">
+                android:label="@string/title_activity_preview"
+                android:parentActivityName=".CollageActivity">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="CollageActivity"/>
         </activity>
 
         <provider

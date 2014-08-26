@@ -25,6 +25,8 @@ public class UserPhotosActivity extends ActionBarActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             // Show the Up button in the action bar.
             getActionBar().setDisplayHomeAsUpEnabled(true);
+        }  else {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
         User user = User.fromBundle(getIntent().getExtras());

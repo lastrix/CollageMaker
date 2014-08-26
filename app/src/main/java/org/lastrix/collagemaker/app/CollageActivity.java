@@ -2,6 +2,7 @@ package org.lastrix.collagemaker.app;
 
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
@@ -33,6 +34,7 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
     private GFXSurfaceView mGfxSurfaceView;
     private LoadPhotosTask mTask;
     private boolean mCanceled;
+    private volatile boolean mCapturing = false;
 
 
     @Override
@@ -43,11 +45,21 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             // Show the Up button in the action bar.
             getActionBar().setDisplayHomeAsUpEnabled(true);
+        } else {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.surface_collage);
 
-        mCanceled = true;
+        if ( savedInstanceState == null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                if ( mGfxSurfaceView.getPreserveEGLContextOnPause()) {
+                    mCanceled = true;
+                }
+            } else {
+                mCanceled = true;
+            }
+        }
     }
 
     @Override
@@ -105,7 +117,10 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
         int id = item.getItemId();
         switch (id) {
             case R.id.preview:
+                //already working
+                if ( mCapturing) return true;
                 //do preview
+                mCapturing = true;
                 mGfxSurfaceView.requestCapture();
                 return true;
 
@@ -124,7 +139,11 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
 
     @Override
     public void captured(final Bitmap bmp) {
-
+        ImageLoader.getInstance().getMemoryCache().put(URI_SCREEN_SHOT, bmp);
+        Intent intent = new Intent(this, PreviewActivity.class);
+        intent.putExtra(PreviewActivity.FILE_URL, URI_SCREEN_SHOT);
+        startActivity(intent);
+        mCapturing = false;
     }
 
     @Override

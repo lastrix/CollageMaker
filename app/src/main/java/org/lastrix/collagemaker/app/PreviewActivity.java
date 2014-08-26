@@ -1,5 +1,6 @@
 package org.lastrix.collagemaker.app;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -21,6 +22,13 @@ public class PreviewActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // Show the Up button in the action bar.
+            getActionBar().setDisplayHomeAsUpEnabled(true);
+        } else {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         Bundle bundle = getIntent().getExtras();
         mUri = bundle.getString(FILE_URL);
@@ -58,19 +66,7 @@ public class PreviewActivity extends ActionBarActivity {
 //                startActivity(Intent.createChooser(intent, getString(R.string.send_email_using)));
                 finish();
                 return true;
-
-            case R.id.action_cancel:
-                finish();
-                return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (LOG_ALL) {
-            Log.v(LOG_TAG, "onResume()");
-        }
     }
 }
