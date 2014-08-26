@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.*;
@@ -42,12 +43,7 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_collage);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // Show the Up button in the action bar.
-            getActionBar().setDisplayHomeAsUpEnabled(true);
-        } else {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.surface_collage);
 
@@ -108,6 +104,10 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                return true;
+
             case R.id.preview:
                 //already working
                 if ( mCapturing) return true;

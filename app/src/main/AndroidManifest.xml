@@ -28,7 +28,7 @@
                 android:parentActivityName=".UserListActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="RequestActivity"/>
+                    android:value=".UserListActivity"/>
         </activity>
         <activity
                 android:name="org.lastrix.collagemaker.app.PreviewActivity"
@@ -36,7 +36,7 @@
                 android:parentActivityName=".CollageActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="CollageActivity"/>
+                    android:value=".CollageActivity"/>
         </activity>
 
         <provider
@@ -52,7 +52,7 @@
                 android:parentActivityName=".UserListActivity">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="RequestActivity"/>
+                    android:value=".UserListActivity"/>
         </activity>
     </application>
 
