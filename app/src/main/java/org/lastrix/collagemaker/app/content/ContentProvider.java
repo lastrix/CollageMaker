@@ -138,6 +138,12 @@ public class ContentProvider extends android.content.ContentProvider {
             Log.v(LOG_TAG, "Uri = " + uri.toString() + " contentValues=" + values + " selection=" + selection + " selectionArgs=" + Arrays.toString(selectionArgs));
         }
         switch (sUriMatcher.match(uri)) {
+            case CODE_USER:
+                return db.update(User.TABLE_NAME, values, selection, selectionArgs);
+
+            case CODE_PHOTO:
+                return db.update(Photo.TABLE_NAME, values, selection, selectionArgs);
+
             case CODE_USER_UPDATE:
                 return db.update(User.TABLE_NAME, values, selection, selectionArgs);
 
