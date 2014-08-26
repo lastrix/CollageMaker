@@ -1,33 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">CollageMaker</string>
-    <string name="error_no_username_specified">Error: no username specified.</string>
-    <string name="error_user_check_failed">Error: user check failed.</string>
-    <string name="error_no_user_found">Error: no user found.</string>
+    <string name="app_name">CollageMaker!</string>
+
     <string name="activity_collage">Make your collage</string>
-    <string name="error_user_selection_not_implemented">Error: search returned multiple users. Selection is not implemented.</string>
-    <string name="message_searching_for_user">Searching for user…</string>
-    <string name="accept">Accept</string>
-    <string name="message_downloading_popular_photos_list">Downloading popular photos list…</string>
+    <string name="activity_preview">Preview</string>
+
+    <string name="error_search_failed">Error: user search failed</string>
     <string name="error_index_loading_failed">Error: failed to load list of popular user images</string>
-    <string name="error_image_loading_failed">Error: image loading failed</string>
-    <string name="zoom_in">Zoom in</string>
-    <string name="zoom_out">Zoom out</string>
-    <string name="title_activity_preview">PreviewActivity</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
-    <string name="action_apply">Apply</string>
-    <string name="action_cancel">Cancel</string>
-    <string name="send_email_using">Send email using</string>
-    <string name="message_loading">Loading</string>
-    <string name="title_search">Search</string>
-    <string name="hint_search_user">Instagram user</string>
-    <string name="info_no_results">No results.</string>
-    <string name="content_no_description">No description</string>
-    <string name="title_activity_user_photos">UserPhotosActivity</string>
-    <string name="title_loading">Loading</string>
+
+    <string name="action_accept">Accept</string>
+    <string name="action_zoom_in">Zoom in</string>
+    <string name="action_zoom_out">Zoom out</string>
+    <string name="action_send">Send</string>
     <string name="action_collage">Collage</string>
     <string name="action_reset">Reset selection</string>
+
+    <string name="hint_search_user">Instagram user</string>
+
+    <string name="info_no_results">No results</string>
+
+    <string name="content_no_description">No description</string>
+
+    <string name="title_loading">Loading</string>
+    <string name="title_search">Search</string>
 
 </resources>

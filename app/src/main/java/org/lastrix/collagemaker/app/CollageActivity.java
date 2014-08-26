@@ -51,15 +51,7 @@ public class CollageActivity extends ActionBarActivity implements GFXListener, L
 
         mGfxSurfaceView = (GFXSurfaceView) findViewById(R.id.surface_collage);
 
-        if ( savedInstanceState == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                if ( mGfxSurfaceView.getPreserveEGLContextOnPause()) {
-                    mCanceled = true;
-                }
-            } else {
-                mCanceled = true;
-            }
-        }
+        mCanceled = true;
     }
 
     @Override

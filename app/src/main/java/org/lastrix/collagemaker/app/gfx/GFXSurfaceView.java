@@ -48,9 +48,6 @@ public final class GFXSurfaceView extends GLSurfaceView {
 
         mRenderer = new GFXRenderer();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            setPreserveEGLContextOnPause(true);
-        }
         setEGLConfigChooser(8, 8, 8, 8, 0, 0);
         setRenderer(mRenderer);
 

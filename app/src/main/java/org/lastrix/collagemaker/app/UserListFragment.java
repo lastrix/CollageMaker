@@ -2,7 +2,6 @@ package org.lastrix.collagemaker.app;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.os.AsyncTask;
@@ -159,7 +158,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     @Override
     public void onSearchFailed(Throwable e) {
         Log.e(LOG_TAG, "Failed to check user.", e);
-        Toast.makeText(getActivity(), R.string.error_user_check_failed, Toast.LENGTH_LONG).show();
+        Toast.makeText(getActivity(), R.string.error_search_failed, Toast.LENGTH_LONG).show();
         mSearchTask = null;
         mSelected = -1;
     }

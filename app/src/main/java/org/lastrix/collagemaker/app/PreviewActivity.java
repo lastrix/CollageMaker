@@ -57,7 +57,7 @@ public class PreviewActivity extends ActionBarActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         switch (id) {
-            case R.id.action_apply:
+            case R.id.action_send:
                 //send mail
 //                final Intent intent = new Intent(Intent.ACTION_SEND);
 //                intent.setType("image/png");

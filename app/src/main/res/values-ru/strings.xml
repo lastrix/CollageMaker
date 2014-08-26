@@ -1,32 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">ДаешьКоллаж!</string>
-    <string name="error_no_username_specified">Ошибка: имя пользователя не задано</string>
-    <string name="error_user_check_failed">Ошибка: проверка пользователя не удалась</string>
-    <string name="error_no_user_found">Ошибка: пользователя с таким именем не обнаружено</string>
-    <string name="activity_collage">Выберите фотографии</string>
-    <string name="error_user_selection_not_implemented">Ошибка: было обнаружено несколько пользователей с таким именем, выбор пользователя из списка не возможен</string>
-    <string name="message_searching_for_user">Ищу пользователя…</string>
-    <string name="accept">Принять</string>
-    <string name="message_downloading_popular_photos_list">Загружаю список популярных фотографий пользователя…</string>
+    <string name="app_name">ДавайКоллаж!</string>
+
+    <string name="activity_collage">Создай свой коллаж!</string>
+    <string name="activity_preview">Просмотр</string>
+
+    <string name="error_search_failed">Ошибка: сбой при поиске</string>
     <string name="error_index_loading_failed">Ошибка: не удалось загрузить список популярных фотографий пользователя</string>
-    <string name="error_image_loading_failed">Ошибка: не удалось загрузить изображения</string>
-    <string name="all">Все</string>
-    <string name="none">Ничего</string>
-    <string name="zoom_in">Увеличить</string>
-    <string name="zoom_out">Уменьшить</string>
-    <string name="action_apply">Принять</string>
-    <string name="action_cancel">Отменить</string>
-    <string name="send_email_using">Отправить письмо используя:</string>
-    <string name="message_loading">Загружаю фотографии…</string>
-    <string name="title_search">Поиск</string>
-    <string name="hint_search_user">Пользователь инстаграма</string>
-    <string name="info_no_results">Ничего не найдено</string>
-    <string name="content_no_description">Описание отсутствует</string>
-    <string name="title_activity_user_photos">Фотографии пользователя</string>
-    <string name="title_loading">Загрузка</string>
+
+    <string name="action_accept">Принять</string>
+    <string name="action_zoom_in">Увеличить</string>
+    <string name="action_zoom_out">Уменьшить</string>
+    <string name="action_send">Отправить</string>
     <string name="action_collage">Коллаж</string>
-    <string name="action_reset">Отмена выбора</string>
+    <string name="action_reset">Сбросить выбор</string>
+
+    <string name="hint_search_user">Пользователь инстаграма</string>
+
+    <string name="info_no_results">Пусто</string>
+
+    <string name="content_no_description">Нет описания</string>
+
+    <string name="title_loading">Загрузка</string>
+    <string name="title_search">Поиск</string>
 
 </resources>
