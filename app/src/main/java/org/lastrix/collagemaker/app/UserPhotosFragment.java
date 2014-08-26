@@ -213,7 +213,7 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
 
             if (!holder.loaded) {
                 holder.loaded = true;
-                holder.thumbnail.setImageResource(android.R.drawable.ic_menu_report_image);
+                holder.thumbnail.setImageResource(android.R.drawable.progress_indeterminate_horizontal);
                 Photo photo = mPhotos.get(position);
 
                 ImageLoader loader = ImageLoader.getInstance();
