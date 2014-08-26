@@ -13,6 +13,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_alignParentBottom="false"
-            android:id="@+id/fragment_container">
+            android:id="@+id/fragment_container_photos">
     </FrameLayout>
 </RelativeLayout>

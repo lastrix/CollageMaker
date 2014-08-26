@@ -169,6 +169,21 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
         // to mAdapter and manual background setting.
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public void resetSelection() {
+        if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ) {
+            final int size = mAdapter.getCount();
+            for (int i = 0; i < size; i++) {
+                mGridView.setItemChecked(i, false);
+            }
+        } else {
+            for( Photo photo : mAdapter.mPhotos){
+                photo.setChecked(false);
+            }
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
     private static class PhotoListViewAdapter extends BaseAdapter {
         private LayoutInflater mInflater;
         private List<Photo> mPhotos;

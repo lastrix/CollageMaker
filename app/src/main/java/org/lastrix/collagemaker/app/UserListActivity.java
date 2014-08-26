@@ -45,13 +45,13 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
 
         }
 
-        if (findViewById(R.id.fragment_container) != null) {
+        if (findViewById(R.id.fragment_container_photos) != null) {
             //install photos fragment
             mTwoPane = true;
 
             if (savedInstanceState == null) {
                 manager.beginTransaction()
-                        .add(R.id.fragment_container, UserPhotosFragment.newInstance(null))
+                        .add(R.id.fragment_container_photos, UserPhotosFragment.newInstance(null))
                         .commit();
             }
         }
@@ -123,6 +123,8 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
 
             case R.id.action_reset:
                 new ResetSelectionTask(getContentResolver()).execute();
+                UserPhotosFragment fragment = (UserPhotosFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container_photos);
+                fragment.resetSelection();
                 return true;
 
             case R.id.action_collage:
@@ -146,7 +148,7 @@ public class UserListActivity extends ActionBarActivity implements UserListFragm
         if (mTwoPane) {
             //simply replace old one
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, UserPhotosFragment.newInstance(user))
+                    .replace(R.id.fragment_container_photos, UserPhotosFragment.newInstance(user))
                     .commit();
         } else {
             //start intent

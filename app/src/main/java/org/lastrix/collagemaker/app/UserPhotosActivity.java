@@ -34,7 +34,7 @@ public class UserPhotosActivity extends ActionBarActivity {
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.fragment_container, UserPhotosFragment.newInstance(user))
+                    .add(R.id.fragment_container_photos, UserPhotosFragment.newInstance(user))
                     .commit();
         }
     }
@@ -56,6 +56,8 @@ public class UserPhotosActivity extends ActionBarActivity {
 
             case R.id.action_reset:
                 new ResetSelectionTask(getContentResolver()).execute();
+                UserPhotosFragment fragment = (UserPhotosFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container_photos);
+                fragment.resetSelection();
                 return true;
 
             case R.id.action_collage:

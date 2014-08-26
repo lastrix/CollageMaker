@@ -19,7 +19,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="@integer/activity_request_container_weight"
-            android:id="@+id/fragment_container">
+            android:id="@+id/fragment_container_photos">
     </FrameLayout>
 
     <!--<fragment-->
