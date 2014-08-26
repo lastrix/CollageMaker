@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,8 +13,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import com.nostra13.universalimageloader.core.ImageLoader;
+
 import org.lastrix.collagemaker.app.api.UserSearchTask;
 import org.lastrix.collagemaker.app.content.ContentHelper;
 import org.lastrix.collagemaker.app.content.User;
@@ -44,16 +52,16 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
     private long mSelected = -1;
     private SetupRunnable mSetupRunnable;
 
-    public static UserListFragment newInstance(String username){
-        UserListFragment fragment = new UserListFragment();
-        Bundle bundle = new Bundle();
-        bundle.putString(ARG_SEARCH, username!=null?username:UserSearchTask.SENTINEL);
-        fragment.setArguments(bundle);
-        return fragment;
-    }
-
     public UserListFragment() {
         // Required empty public constructor
+    }
+
+    public static UserListFragment newInstance(String username) {
+        UserListFragment fragment = new UserListFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(ARG_SEARCH, username != null ? username : UserSearchTask.SENTINEL);
+        fragment.setArguments(bundle);
+        return fragment;
     }
 
     @Override
@@ -62,7 +70,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
 
         mSearch = getArguments().getString(ARG_SEARCH);
 
-        if ( savedInstanceState != null ){
+        if (savedInstanceState != null) {
             mSelected = savedInstanceState.getLong(CONFIG_SELECTED);
         }
     }
@@ -111,7 +119,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         }
         mListView.removeCallbacks(mSetupRunnable);
         mSetupRunnable = null;
-        if ( mProgressDialog.isShowing() ){
+        if (mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
         }
     }
@@ -135,6 +143,9 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
         User user = (User) mAdapter.getItem(position);
         mListener.onUserSelected(user);
         mSelected = user.getId();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            AdapterCompat.state(view, view.isSelected());
+        }
     }
 
     @Override
@@ -251,7 +262,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
                 holder.nick.setText(user.getUsername());
 
                 holder.favorite.setTag(position);
-                if ( holder.user.isFavorite() ) {
+                if (holder.user.isFavorite()) {
                     holder.favorite.setImageResource(android.R.drawable.btn_star_big_on);
                 } else {
                     holder.favorite.setImageResource(android.R.drawable.btn_star_big_off);
@@ -263,6 +274,9 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
                 loader.cancelDisplayTask(holder.photo);
                 loader.displayImage(holder.url, holder.photo);
 
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+                    AdapterCompat.state(convertView, convertView.isSelected());
+                }
             }
             return convertView;
         }
@@ -289,7 +303,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             Integer position = (Integer) v.getTag();
             User user = mUsers.get(position);
             user.setFavorite(!user.isFavorite());
-            if ( user.isFavorite() ) {
+            if (user.isFavorite()) {
                 image.setImageResource(android.R.drawable.btn_star_big_on);
             } else {
                 image.setImageResource(android.R.drawable.btn_star_big_off);
@@ -308,7 +322,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             ImageView favorite;
         }
 
-        private static class FavoriteChangeTask extends AsyncTask<User, Void, Void>{
+        private static class FavoriteChangeTask extends AsyncTask<User, Void, Void> {
 
             private ContentResolver mContentResolver;
 
@@ -319,7 +333,7 @@ public class UserListFragment extends Fragment implements AdapterView.OnItemClic
             @Override
             protected Void doInBackground(User... params) {
                 ContentValues values = new ContentValues(1);
-                for( User user : params){
+                for (User user : params) {
                     values.clear();
                     values.put(User.COLUMN_FAVORITE, user.isFavorite());
                     mContentResolver.update(ContentHelper.getUserUri(user),

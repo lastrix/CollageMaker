@@ -13,8 +13,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.Toast;
+
 import com.nostra13.universalimageloader.core.ImageLoader;
+
 import org.lastrix.collagemaker.app.api.PopularPhotosTask;
 import org.lastrix.collagemaker.app.content.ContentHelper;
 import org.lastrix.collagemaker.app.content.Photo;
@@ -130,21 +136,23 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
             mPopularPhotosTask.cancel(true);
             mPopularPhotosTask = null;
         }
-        if ( mSetupRunnable != null ) {
+        if (mSetupRunnable != null) {
             mGridView.removeCallbacks(mSetupRunnable);
             mSetupRunnable = null;
         }
-        if ( mProgressDialog.isShowing() ){
+        if (mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        //TODO:
         Photo photo = mAdapter.mPhotos.get(position);
         photo.setChecked(!photo.isChecked());
         new UpdatePhotoTask(getActivity().getContentResolver()).execute(photo);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            AdapterCompat.state(view, photo.isChecked());
+        }
     }
 
 
@@ -171,17 +179,16 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void resetSelection() {
-        if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             final int size = mAdapter.getCount();
             for (int i = 0; i < size; i++) {
                 mGridView.setItemChecked(i, false);
             }
-        } else {
-            for( Photo photo : mAdapter.mPhotos){
-                photo.setChecked(false);
-            }
-            mAdapter.notifyDataSetChanged();
         }
+        for (Photo photo : mAdapter.mPhotos) {
+            photo.setChecked(false);
+        }
+        mAdapter.notifyDataSetChanged();
     }
 
     private static class PhotoListViewAdapter extends BaseAdapter {
@@ -235,10 +242,13 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
                 loader.cancelDisplayTask(holder.thumbnail);
                 loader.displayImage(photo.getThumbnailUrl(), holder.thumbnail);
 
-                //TODO: background setting in pre honeycomb versions
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+                    AdapterCompat.state(convertView, photo.isChecked());
+                }
             }
             return convertView;
         }
+
 
         private static class ViewHolder {
             int position;
@@ -258,9 +268,9 @@ public class UserPhotosFragment extends Fragment implements AdapterView.OnItemCl
         @Override
         protected Boolean doInBackground(Photo... params) {
             ContentValues values = new ContentValues(1);
-            for( Photo photo : params){
+            for (Photo photo : params) {
                 values.clear();
-                values.put(Photo.COLUMN_CHECKED, photo.isChecked()?1:0);
+                values.put(Photo.COLUMN_CHECKED, photo.isChecked() ? 1 : 0);
                 mContentResolver.update(ContentHelper.getPhotoUri(photo),
                         values,
                         String.format("%s = ?", Photo.COLUMN_ID),

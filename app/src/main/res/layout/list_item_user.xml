@@ -1,49 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:background="@drawable/abc_ab_stacked_transparent_light_holo">
+    android:layout_width="match_parent"
+    android:layout_height="100dp"
+    android:cacheColorHint="#00000000">
 
     <ImageView
-            android:layout_width="@dimen/user_photo_dim"
-            android:layout_height="@dimen/user_photo_dim"
-            android:id="@+id/photo"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"
-            android:contentDescription="@string/content_no_description"
-            />
+        android:id="@+id/photo"
+        android:layout_width="@dimen/user_photo_dim"
+        android:layout_height="@dimen/user_photo_dim"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:contentDescription="@string/content_no_description" />
 
     <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text=""
-            android:id="@+id/nick"
-            android:layout_below="@+id/photo"
-            android:layout_toRightOf="@+id/photo"
-            android:layout_marginLeft="50dp"
-            android:layout_alignParentStart="false"
-            android:layout_alignParentTop="true"/>
+        android:id="@+id/nick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_below="@+id/photo"
+        android:layout_marginLeft="50dp"
+        android:layout_toRightOf="@+id/photo"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 
     <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:text=""
-            android:id="@+id/name"
-            android:layout_below="@+id/nick"
-            android:layout_alignLeft="@+id/nick"
-            android:layout_alignStart="@+id/nick"/>
+        android:id="@+id/name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/nick"
+        android:layout_alignStart="@+id/nick"
+        android:layout_below="@+id/nick"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/favorite"
-            android:src="@android:drawable/btn_star_big_off"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:focusable="false"
-            android:layout_alignParentEnd="true"/>
+        android:id="@+id/favorite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:focusable="false"
+        android:src="@android:drawable/btn_star_big_off" />
 </RelativeLayout>
